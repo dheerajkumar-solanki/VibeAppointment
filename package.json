@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@sylphai/adal-cli-linux-x64": "^0.8.2"
+  }
+}
