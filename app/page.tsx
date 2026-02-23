@@ -24,7 +24,7 @@ export default async function HomePage() {
               </div>
               
               <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl xl:text-7xl leading-[1.1]">
-                Modern healthcare, <br />
+                Modern healthcare <br />
                 <span className="bg-gradient-to-r from-brand-400 to-cyan-300 bg-clip-text text-transparent">
                   simplified.
                 </span>
