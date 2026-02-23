@@ -38,6 +38,8 @@ export default async function PatientDashboardPage() {
     .select(`
       *,
       doctors (
+        first_name,
+        last_name,
         user_profiles (full_name),
         specialities (name),
         clinics (name)
@@ -59,6 +61,8 @@ export default async function PatientDashboardPage() {
       *,
       doctors (
         id,
+        first_name,
+        last_name,
         user_profiles (full_name),
         specialities (name),
         clinics (name)

@@ -29,8 +29,8 @@ export function UserMenu({ user }: { user: { email?: string; user_metadata?: Rec
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
       await supabase.auth.signOut();
-      router.refresh();
-      router.push("/");
+      // Force full page navigation to ensure UI updates
+      window.location.href = "/";
     } catch (error) {
       console.error("Sign out error:", error);
       window.location.href = "/";
