@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function TimeOffPage() {
   const { user } = await requireUserWithRole("doctor");
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Get doctor profile
   const { data: doctor } = await supabase

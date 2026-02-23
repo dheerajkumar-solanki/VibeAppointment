@@ -8,14 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export const dynamic = "force-dynamic";
 
 interface NewReviewPageProps {
-  params: { doctorId: string };
-  searchParams: { appointmentId?: string };
+  params: Promise<{ doctorId: string }>;
+  searchParams: Promise<{ appointmentId?: string }>;
 }
 
 export default async function NewReviewPage({ params, searchParams }: NewReviewPageProps) {
   const { user } = await requireUserWithRole("patient");
-  const { doctorId } = params;
-  const appointmentId = searchParams.appointmentId;
+  const { doctorId } = await params;
+  const { appointmentId } = await searchParams;
 
   const doctorIdNum = parseInt(doctorId, 10);
   const appointmentIdNum = appointmentId ? parseInt(appointmentId, 10) : null;
@@ -24,7 +24,7 @@ export default async function NewReviewPage({ params, searchParams }: NewReviewP
     notFound();
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Verify the appointment belongs to this patient and doctor
   const { data: appointment } = await supabase

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 export const dynamic = "force-dynamic";
 
 interface DoctorDetailPageProps {
-  params: { doctorId: string };
+  params: Promise<{ doctorId: string }>;
 }
 
 interface Doctor {
@@ -42,14 +42,14 @@ interface Review {
 }
 
 export default async function DoctorDetailPage({ params }: DoctorDetailPageProps) {
-  const { doctorId } = params;
+  const { doctorId } = await params;
   const doctorIdNum = parseInt(doctorId, 10);
 
   if (isNaN(doctorIdNum)) {
     notFound();
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Fetch doctor details
   const { data: doctor, error: doctorError } = await supabase
@@ -78,7 +78,7 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
     .order("created_at", { ascending: false })
     .limit(10);
 
-  const reviewsList: Review[] = (reviews || []).map((r: Review) => ({
+  const reviewsList = ((reviews || []) as (Review & { full_name: string })[]).map((r) => ({
     ...r,
     full_name: r.user_profiles?.full_name || "Anonymous",
   }));

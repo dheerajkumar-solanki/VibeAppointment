@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from "./supabase/server";
 type UserRole = "patient" | "doctor";
 
 export async function getUserAndProfile() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const {
     data: { user },

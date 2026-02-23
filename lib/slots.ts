@@ -9,7 +9,7 @@ export async function getAvailableSlotsForDoctorOnDate(
   doctorId: number,
   dateISO: string
 ): Promise<TimeSlot[]> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const date = new Date(dateISO);
   if (Number.isNaN(date.getTime())) {

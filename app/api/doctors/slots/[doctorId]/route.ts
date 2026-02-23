@@ -3,11 +3,12 @@ import { getAvailableSlotsForDoctorOnDate } from "@/lib/slots";
 
 export async function GET(
   request: NextRequest,
-  context: { params: { doctorId: string } }
+  context: { params: Promise<{ doctorId: string }> }
 ) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
-  const doctorId = Number.parseInt(context.params.doctorId, 10);
+  const { doctorId: doctorIdStr } = await context.params;
+  const doctorId = Number.parseInt(doctorIdStr, 10);
 
   if (!date || Number.isNaN(doctorId)) {
     return NextResponse.json(

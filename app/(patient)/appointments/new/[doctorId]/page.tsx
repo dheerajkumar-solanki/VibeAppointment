@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 export const dynamic = "force-dynamic";
 
 interface NewAppointmentPageProps {
-  params: { doctorId: string };
+  params: Promise<{ doctorId: string }>;
 }
 
 interface Doctor {
@@ -27,14 +27,14 @@ interface Doctor {
 
 export default async function NewAppointmentPage({ params }: NewAppointmentPageProps) {
   const { user } = await requireUserWithRole("patient");
-  const { doctorId } = params;
+  const { doctorId } = await params;
   const doctorIdNum = parseInt(doctorId, 10);
 
   if (isNaN(doctorIdNum)) {
     notFound();
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Fetch doctor details
   const { data: doctor, error: doctorError } = await supabase

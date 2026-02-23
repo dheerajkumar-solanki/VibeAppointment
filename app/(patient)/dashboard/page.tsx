@@ -27,7 +27,7 @@ interface Appointment {
 export default async function PatientDashboardPage() {
   const { user, profile } = await requireUserWithRole("patient");
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Fetch upcoming appointments
   const now = new Date().toISOString();
@@ -78,12 +78,15 @@ export default async function PatientDashboardPage() {
     existingReviews?.map(r => r.doctor_id) || []
   );
 
-  const appointmentsWithReview = (pastAppointments || []).map((apt: Appointment) => ({
-    ...apt,
-    doctor_name: apt.doctors?.user_profiles?.full_name || "Unknown",
-    doctor_id: apt.doctors?.id || apt.doctor_id,
-    can_review: !reviewedDoctorIds.has(apt.doctor_id),
-  }));
+  const appointmentsWithReview = (pastAppointments || []).map((apt: Appointment) => {
+    const doctor = apt.doctors as { id: number; user_profiles: { full_name: string } } | null;
+    return {
+      ...apt,
+      doctor_name: doctor?.user_profiles?.full_name || "Unknown",
+      doctor_id: doctor?.id || apt.doctor_id,
+      can_review: !reviewedDoctorIds.has(apt.doctor_id),
+    };
+  });
 
   return (
     <div className="space-y-6">

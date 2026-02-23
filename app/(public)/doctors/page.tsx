@@ -23,7 +23,7 @@ interface Doctor {
 }
 
 export default async function DoctorsPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data: doctors, error } = await supabase
     .from("doctors")

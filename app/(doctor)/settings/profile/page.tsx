@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function DoctorProfilePage() {
   const { user } = await requireUserWithRole("doctor");
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Get existing doctor profile
   const { data: doctor } = await supabase

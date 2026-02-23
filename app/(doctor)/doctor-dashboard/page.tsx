@@ -23,7 +23,7 @@ interface Appointment {
 export default async function DoctorDashboardPage() {
   const { user, profile } = await requireUserWithRole("doctor");
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Get doctor profile
   const { data: doctor } = await supabase

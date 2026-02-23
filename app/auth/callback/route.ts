@@ -1,13 +1,27 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
 
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => cookieStore.set(name, value));
+          },
+        },
+      }
+    );
 
     await supabase.auth.exchangeCodeForSession(code);
 
@@ -25,13 +39,11 @@ export async function GET(request: NextRequest) {
       // Ensure a profile row exists; default role to 'patient' for now.
       await supabase
         .from("user_profiles")
-        .insert({
+        .upsert({
           id: user.id,
           full_name: fullName,
           role: "patient",
-        })
-        .onConflict("id")
-        .ignore();
+        }, { onConflict: "id", ignoreDuplicates: true });
     }
   }
 
