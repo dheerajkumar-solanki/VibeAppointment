@@ -44,6 +44,43 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid startAt" }, { status: 400 });
   }
 
+  // Check if doctor has time off on this date
+  const startOfDay = new Date(startAt);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(startAt);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const { data: timeOff } = await supabase
+    .from("doctor_time_off")
+    .select("id")
+    .eq("doctor_id", doctorId)
+    .lte("start_at", endOfDay.toISOString())
+    .gte("end_at", startOfDay.toISOString())
+    .limit(1);
+
+  if (timeOff && timeOff.length > 0) {
+    return NextResponse.json(
+      { error: "Doctor is not available on this date" },
+      { status: 400 }
+    );
+  }
+
+  // Check if doctor works on this day of week
+  const weekday = startAt.getUTCDay();
+  const { data: availability } = await supabase
+    .from("doctor_availability")
+    .select("id")
+    .eq("doctor_id", doctorId)
+    .eq("weekday", weekday)
+    .limit(1);
+
+  if (!availability || availability.length === 0) {
+    return NextResponse.json(
+      { error: "Doctor is not available on this day" },
+      { status: 400 }
+    );
+  }
+
   const endAt = new Date(startAt.getTime() + 30 * 60 * 1000);
 
   try {

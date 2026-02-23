@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DoctorCard } from "@/components/doctor-card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import DoctorsSearch from "./doctors-search";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +26,21 @@ interface Doctor {
   clinics: { name: string; city: string } | null;
 }
 
-export default async function DoctorsPage() {
+interface SearchParams {
+  search?: string;
+  specialty?: string;
+  city?: string;
+}
+
+export default async function DoctorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
   const supabase = await createSupabaseServerClient();
 
-  const { data: doctors, error } = await supabase
+  let query = supabase
     .from("doctors")
     .select(`
       first_name,
@@ -49,8 +61,25 @@ export default async function DoctorsPage() {
       specialities (name),
       clinics (name, city)
     `)
-    .eq("status", "approved")
-    .order("avg_rating_overall", { ascending: false });
+    .eq("status", "approved");
+
+  // Apply search filter
+  if (params.search) {
+    const searchTerm = params.search.toLowerCase();
+    query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,specialities.name.ilike.%${searchTerm}%,clinics.name.ilike.%${searchTerm}%`);
+  }
+
+  // Apply specialty filter
+  if (params.specialty) {
+    query = query.eq("specialities.name", params.specialty);
+  }
+
+  // Apply city filter
+  if (params.city) {
+    query = query.eq("clinics.city", params.city);
+  }
+
+  const { data: doctors, error } = await query.order("avg_rating_overall", { ascending: false });
 
   if (error) {
     console.error("Error fetching doctors:", error);
@@ -82,23 +111,7 @@ export default async function DoctorsPage() {
       </section>
 
       {/* Search and Filters */}
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60">
-        <div className="relative flex-1 max-w-xl">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search doctors by name, specialty, or clinic..."
-            className="w-full rounded-xl border-none bg-slate-50 py-3.5 pl-12 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500/20 shadow-inner"
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-px bg-slate-200 hidden sm:block"></div>
-          <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-50 px-6 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900">
-            <SlidersHorizontal className="h-4 w-4" />
-            Filters
-          </button>
-        </div>
-      </section>
+      <DoctorsSearch />
 
       {/* Results Section */}
       <section>
