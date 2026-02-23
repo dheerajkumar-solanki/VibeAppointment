@@ -60,8 +60,20 @@ export default function LoginPage() {
       if (verifyError) {
         setError(verifyError.message);
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        // Create profile if it doesn't exist (for OTP login)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error: profileError } = await supabase
+            .from("user_profiles")
+            .upsert({
+              id: user.id,
+              email: user.email,
+              full_name: user.email?.split('@')[0] || 'User',
+              role: "patient",
+            }, { onConflict: "id", ignoreDuplicates: true });
+        }
+        // Force a full page navigation to ensure redirect works
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       setError("An unexpected error occurred");
