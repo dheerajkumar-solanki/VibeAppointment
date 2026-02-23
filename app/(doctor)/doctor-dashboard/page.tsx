@@ -202,7 +202,7 @@ export default async function DoctorDashboardPage() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">Today's Schedule</h2>
               </div>
-              <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200">{todayCount} Total</Badge>
+              <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">{todayCount} Total</Badge>
             </div>
             
             <div className="p-6 sm:px-8 bg-slate-50/30">
