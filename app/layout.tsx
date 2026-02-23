@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { dynamic } from "next/dynamic";
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { UserMenu } from "@/components/user-menu";
 
 export const metadata: Metadata = {
   title: "VibeAppointment - Book Trusted Doctors",
@@ -7,11 +12,16 @@ export const metadata: Metadata = {
     "Book trusted doctors, manage appointments, and share real patient feedback with VibeAppointment.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="en">
       <body className="min-h-screen bg-slate-50 text-slate-900">
@@ -30,9 +40,13 @@ export default function RootLayout({
                 <a href="/doctors" className="hover:text-brand-600">
                   Doctors
                 </a>
-                <a href="/login" className="rounded-md bg-brand-500 px-3 py-1.5 text-white hover:bg-brand-600">
-                  Sign in
-                </a>
+                {user ? (
+                  <UserMenu user={user} />
+                ) : (
+                  <a href="/login" className="rounded-md bg-brand-500 px-3 py-1.5 text-white hover:bg-brand-600">
+                    Sign in
+                  </a>
+                )}
               </nav>
             </div>
           </header>
@@ -49,4 +63,3 @@ export default function RootLayout({
     </html>
   );
 }
-
