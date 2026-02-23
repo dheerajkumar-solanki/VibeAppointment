@@ -19,10 +19,19 @@ export async function createSupabaseServerClient() {
         return cookieStore.get(name)?.value;
       },
       set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options });
+        // This will only work in Server Actions and Route Handlers
+        try {
+          cookieStore.set({ name, value, ...options });
+        } catch (error) {
+          // Ignore cookie setting errors in Server Components
+        }
       },
       remove(name: string, options: any) {
-        cookieStore.set({ name, value: "", ...options, maxAge: 0 });
+        try {
+          cookieStore.set({ name, value: "", ...options, maxAge: 0 });
+        } catch (error) {
+          // Ignore cookie removal errors in Server Components
+        }
       },
     },
   });

@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: doctorId } = await params;
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              cookieStore.set(name, value, { path: "/" })
+            );
+          },
+        },
+      }
+    );
+
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // TODO: Check if user is admin
+
+    // Update doctor status to approved
+    const { error: updateError } = await supabase
+      .from("doctors")
+      .update({ status: "approved" })
+      .eq("id", parseInt(doctorId));
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 400 });
+    }
+
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/admin/dashboard?success=approved`
+    );
+  } catch (error) {
+    console.error("Approve doctor error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

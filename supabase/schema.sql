@@ -14,6 +14,7 @@ $$ LANGUAGE plpgsql;
 create table if not exists public.user_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text not null check (role in ('patient','doctor')),
+  is_admin boolean not null default false,
   full_name text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -54,10 +55,13 @@ create table if not exists public.doctors (
   id bigserial primary key,
   user_id uuid not null references public.user_profiles(id) on delete cascade,
   clinic_id bigint not null references public.clinics(id) on delete restrict,
+  first_name text not null,
+  last_name text not null,
   degree text,
   speciality_id bigint references public.specialities(id),
   bio text,
   photo_url text,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   avg_rating_overall numeric(2,1) default 0,
   avg_rating_effectiveness numeric(2,1) default 0,
   avg_rating_behavior numeric(2,1) default 0,
@@ -208,6 +212,25 @@ drop policy if exists clinics_select_all on public.clinics;
 create policy clinics_select_all
   on public.clinics
   for select
+  to authenticated
+  using (true);
+
+-- Allow authenticated users to insert specialities
+drop policy if exists specialities_insert on public.specialities;
+create policy specialities_insert
+  on public.specialities
+  for insert
+  to authenticated
+  with check (true);
+
+-- Allow authenticated users to insert clinics
+drop policy if exists clinics_insert on public.clinics;
+create policy clinics_insert
+  on public.clinics
+  for insert
+  to authenticated
+  with check (true);
+  for select
   using (auth.role() = 'authenticated');
 
 drop policy if exists specialities_select_all on public.specialities;
@@ -223,12 +246,25 @@ create policy doctors_select_all
   for select
   using (true);
 
--- doctor_availability: readable by all
+-- Allow authenticated users to insert their own doctor profile
+drop policy if exists doctors_insert_own on public.doctors;
+create policy doctors_insert_own
+  on public.doctors
+  for insert
+  with check (auth.uid() = user_id);
+
+-- doctor_availability: readable by all, doctors manage their own
 drop policy if exists doctor_availability_select_all on public.doctor_availability;
 create policy doctor_availability_select_all
   on public.doctor_availability
   for select
   using (true);
+
+drop policy if exists doctor_availability_manage on public.doctor_availability;
+create policy doctor_availability_manage
+  on public.doctor_availability
+  for all
+  using (auth.uid() in (select user_id from doctors where id = doctor_id));
 
 -- doctor_time_off: similar visibility
 drop policy if exists doctor_time_off_select_all on public.doctor_time_off;
@@ -236,6 +272,12 @@ create policy doctor_time_off_select_all
   on public.doctor_time_off
   for select
   using (true);
+
+drop policy if exists doctor_time_off_manage on public.doctor_time_off;
+create policy doctor_time_off_manage
+  on public.doctor_time_off
+  for all
+  using (auth.uid() in (select user_id from doctors where id = doctor_id));
 
 -- appointments: patients see their own; doctors see their schedule
 drop policy if exists appointments_select_patient on public.appointments;

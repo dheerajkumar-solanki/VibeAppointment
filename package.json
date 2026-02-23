@@ -13,6 +13,7 @@
     "@sylphai/adal-cli-linux-x64": "^0.8.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.48.0",
+    "lucide-react": "^0.460.0",
     "next": "^15.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
