@@ -9,8 +9,16 @@ export function UserMenu({ user }: { user: { email?: string; user_metadata?: Rec
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
-  const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-  const initial = fullName.charAt(0).toUpperCase();
+  // Fix hydration mismatch by using useEffect
+  const [mounted, setMounted] = useState(false);
+  const [fullName, setFullName] = useState("User");
+  const [initial, setInitial] = useState("U");
+
+  useEffect(() => {
+    setMounted(true);
+    setFullName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
+    setInitial((user.user_metadata?.full_name || user.email?.split("@")[0] || "User").charAt(0).toUpperCase());
+  }, [user]);
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
