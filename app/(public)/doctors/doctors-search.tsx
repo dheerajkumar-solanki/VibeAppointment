@@ -25,25 +25,34 @@ export default function DoctorsSearch() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`/doctors?${createQueryString("search", searchValue || null)}`);
+    const params = new URLSearchParams();
+    if (searchValue) {
+      params.set("search", searchValue);
+    }
+    if (searchParams.get("specialty")) {
+      params.set("specialty", searchParams.get("specialty")!);
+    }
+    const queryString = params.toString();
+    router.push(`/doctors${queryString ? `?${queryString}` : ""}`);
   };
 
   const handleFilterChange = (key: string, value: string | null) => {
-    const newParams = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
+    if (searchValue) {
+      params.set("search", searchValue);
+    }
+    if (key !== "specialty" && searchParams.get("specialty")) {
+      params.set("specialty", searchParams.get("specialty")!);
+    }
     if (value) {
-      newParams.set(key, value);
-    } else {
-      newParams.delete(key);
+      params.set(key, value);
     }
-    // Keep search param when changing filters
-    if (searchValue && !newParams.has("search")) {
-      newParams.set("search", searchValue);
-    }
-    router.push(`/doctors?${newParams.toString()}`);
+    router.push(`/doctors${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   const clearFilters = () => {
     setSearchValue("");
+    setShowFilters(false);
     router.push("/doctors");
   };
 
@@ -117,23 +126,6 @@ export default function DoctorsSearch() {
                 <option value="Orthopedics">Orthopedics</option>
                 <option value="Pediatrics">Pediatrics</option>
                 <option value="General Medicine">General Medicine</option>
-              </select>
-            </div>
-
-            {/* City Filter */}
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-2">City</label>
-              <select
-                value={searchParams.get("city") || ""}
-                onChange={(e) => handleFilterChange("city", e.target.value || null)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-              >
-                <option value="">All Cities</option>
-                <option value="New York">New York</option>
-                <option value="Los Angeles">Los Angeles</option>
-                <option value="Chicago">Chicago</option>
-                <option value="Houston">Houston</option>
-                <option value="Phoenix">Phoenix</option>
               </select>
             </div>
           </div>

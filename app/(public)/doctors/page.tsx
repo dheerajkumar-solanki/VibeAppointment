@@ -69,17 +69,42 @@ export default async function DoctorsPage({
     query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,specialities.name.ilike.%${searchTerm}%,clinics.name.ilike.%${searchTerm}%`);
   }
 
-  // Apply specialty filter
+  // Apply specialty filter - filter in memory since relational filters are complex
+  let allDoctors;
   if (params.specialty) {
-    query = query.eq("specialities.name", params.specialty);
+    const { data: doctorsWithSpecialty } = await supabase
+      .from("doctors")
+      .select(`
+        first_name,
+        last_name,
+        id,
+        user_id,
+        clinic_id,
+        degree,
+        speciality_id,
+        bio,
+        photo_url,
+        avg_rating_overall,
+        avg_rating_effectiveness,
+        avg_rating_behavior,
+        review_count,
+        created_at,
+        user_profiles (full_name),
+        specialities (name),
+        clinics (name, city)
+      `)
+      .eq("status", "approved")
+      .eq("specialities.name", params.specialty);
+    
+    allDoctors = doctorsWithSpecialty || [];
   }
 
-  // Apply city filter
-  if (params.city) {
-    query = query.eq("clinics.city", params.city);
-  }
+  let { data: doctors, error } = await query.order("avg_rating_overall", { ascending: false });
 
-  const { data: doctors, error } = await query.order("avg_rating_overall", { ascending: false });
+  // If specialty filter was applied, use the filtered results
+  if (params.specialty && allDoctors) {
+    doctors = allDoctors;
+  }
 
   if (error) {
     console.error("Error fetching doctors:", error);
