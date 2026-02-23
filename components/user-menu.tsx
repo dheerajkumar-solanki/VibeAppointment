@@ -12,14 +12,21 @@ export function UserMenu({ user }: { user: { email?: string; user_metadata?: Rec
   const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
   const initial = fullName.charAt(0).toUpperCase();
 
-  const handleSignOut = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    await supabase.auth.signOut();
-    router.refresh();
-    router.push("/");
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      await supabase.auth.signOut();
+      router.refresh();
+      router.push("/");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      window.location.href = "/";
+    }
   };
 
   // Close menu when clicking outside
