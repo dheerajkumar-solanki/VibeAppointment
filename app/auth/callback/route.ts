@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
+  return handleCallback(request);
+}
+
+export async function HEAD(request: NextRequest) {
+  return handleCallback(request);
+}
+
+async function handleCallback(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const error = requestUrl.searchParams.get("error");

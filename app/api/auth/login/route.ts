@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function POST(request: NextRequest) {
+  return handleOAuthLogin(request);
+}
+
+export async function GET(request: NextRequest) {
+  return handleOAuthLogin(request);
+}
+
+async function handleOAuthLogin(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const cookieStore = await cookies();
   const supabase = createServerClient(
