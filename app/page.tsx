@@ -103,7 +103,7 @@ export default async function HomePage() {
                     </div>
                     <div>
                       <p className="font-semibold text-white">Verified Secure</p>
-                      <p className="text-sm text-slate-300">HIPAA Compliant Platform</p>
+                      <p className="text-sm text-slate-300">Trusted & Secure Platform</p>
                     </div>
                   </div>
                 </div>
