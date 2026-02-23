@@ -55,8 +55,8 @@ export function DoctorCard({ doctor }: DoctorCardProps) {
             <div className="flex flex-1 flex-col justify-center min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="truncate text-lg font-bold text-slate-900 transition-colors group-hover:text-brand-600">
-                    Dr. {fullName}
+                  <h3 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-brand-600 line-clamp-1">
+                    {fullName}
                   </h3>
                   {doctor.degree && (
                     <p className="truncate text-sm font-medium text-slate-500">{doctor.degree}</p>
