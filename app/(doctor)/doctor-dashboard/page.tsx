@@ -37,27 +37,34 @@ export default async function DoctorDashboardPage() {
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
   const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString();
 
-  const { data: todayAppointments } = await supabase
+  const { data: todayAppointmentsRaw } = await supabase
     .from("appointments")
-    .select(`
-      *,
-      user_profiles (full_name)
-    `)
+    .select("*")
     .eq("doctor_id", doctor?.id)
     .gte("start_at", startOfDay)
     .lte("start_at", endOfDay)
     .order("start_at", { ascending: true });
 
+  // Get patient names for today's appointments
+  const patientIds = todayAppointmentsRaw?.map(apt => apt.patient_id).filter(Boolean) || [];
+  const { data: patientProfiles } = await supabase
+    .from("user_profiles")
+    .select("id, full_name")
+    .in("id", patientIds);
+  
+  const profileMap = new Map(patientProfiles?.map(p => [p.id, p]) || []);
+  const todayAppointments = todayAppointmentsRaw?.map(apt => ({
+    ...apt,
+    user_profiles: profileMap.get(apt.patient_id) || null
+  })) || [];
+
   // Get upcoming appointments (next 7 days)
   const nextWeek = new Date(today);
   nextWeek.setDate(nextWeek.getDate() + 7);
   
-  const { data: upcomingAppointments } = await supabase
+  const { data: upcomingAppointmentsRaw } = await supabase
     .from("appointments")
-    .select(`
-      *,
-      user_profiles (full_name)
-    `)
+    .select("*")
     .eq("doctor_id", doctor?.id)
     .eq("status", "scheduled")
     .gte("start_at", today.toISOString())
@@ -65,16 +72,39 @@ export default async function DoctorDashboardPage() {
     .order("start_at", { ascending: true })
     .limit(10);
 
+  // Get patient names for upcoming appointments
+  const upcomingPatientIds = upcomingAppointmentsRaw?.map(apt => apt.patient_id).filter(Boolean) || [];
+  const { data: upcomingPatientProfiles } = await supabase
+    .from("user_profiles")
+    .select("id, full_name")
+    .in("id", upcomingPatientIds);
+  
+  const upcomingProfileMap = new Map(upcomingPatientProfiles?.map(p => [p.id, p]) || []);
+  const upcomingAppointments = upcomingAppointmentsRaw?.map(apt => ({
+    ...apt,
+    user_profiles: upcomingProfileMap.get(apt.patient_id) || null
+  })) || [];
+
   // Get recent reviews
-  const { data: recentReviews } = await supabase
+  const { data: reviewsRaw } = await supabase
     .from("reviews")
-    .select(`
-      *,
-      user_profiles (full_name)
-    `)
+    .select("*")
     .eq("doctor_id", doctor?.id)
     .order("created_at", { ascending: false })
     .limit(5);
+
+  // Get patient names for reviews
+  const reviewerIds = reviewsRaw?.map(r => r.patient_id).filter(Boolean) || [];
+  const { data: reviewerProfiles } = await supabase
+    .from("user_profiles")
+    .select("id, full_name")
+    .in("id", reviewerIds);
+  
+  const reviewerProfileMap = new Map(reviewerProfiles?.map(p => [p.id, p]) || []);
+  const recentReviews = reviewsRaw?.map(r => ({
+    ...r,
+    user_profiles: reviewerProfileMap.get(r.patient_id) || null
+  })) || [];
 
   if (!doctor) {
     return (
