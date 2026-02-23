@@ -112,7 +112,7 @@ export default async function DoctorDashboardPage() {
         
         <div className="relative z-10 max-w-3xl">
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Welcome back, Dr. {profile?.full_name?.split(' ')[1] || profile?.full_name?.split(' ')[0] || ""}
+            Welcome back, Dr. {doctor?.first_name || ""} {doctor?.last_name || ""}
           </h1>
           <p className="mt-4 text-lg text-slate-300">
             Here is your practice overview. You have <span className="font-bold text-white">{todayCount} appointments</span> scheduled for today.
