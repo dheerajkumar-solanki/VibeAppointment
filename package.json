@@ -11,7 +11,6 @@
   "dependencies": {
     "@sylphai/adal-cli": "^0.8.2",
     "@sylphai/adal-cli-linux-x64": "^0.8.2",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.48.0",
     "next": "^15.0.0",
@@ -23,7 +22,7 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",
-    "eslint": "^8.57.0",
+    "eslint": "^9.0.0",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
