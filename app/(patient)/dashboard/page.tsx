@@ -4,6 +4,7 @@ import { requireUserWithRole } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Activity, MapPin, Clock, ArrowRight, User, Stethoscope, XCircle } from "lucide-react";
+import { DismissDeclineButton } from "@/components/dismiss-decline-button";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function PatientDashboardPage() {
     .order("start_at", { ascending: true })
     .limit(5);
 
-  // Fetch recently declined appointments
+  // Fetch recently declined appointments that the patient hasn't dismissed
   const { data: declinedAppointments } = await supabase
     .from("appointments")
     .select(`
@@ -65,6 +66,7 @@ export default async function PatientDashboardPage() {
     `)
     .eq("patient_id", user.id)
     .eq("status", "declined")
+    .eq("patient_ack", false)
     .order("updated_at", { ascending: false })
     .limit(5);
 
@@ -179,6 +181,7 @@ export default async function PatientDashboardPage() {
                       Rebook
                     </Button>
                   </Link>
+                  <DismissDeclineButton appointmentId={apt.id} />
                 </div>
               </div>
             ))}

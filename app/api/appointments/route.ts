@@ -101,6 +101,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Auto-dismiss any unacknowledged declined appointments for same doctor+patient
+  await supabase
+    .from("appointments")
+    .update({ patient_ack: true })
+    .eq("patient_id", user.id)
+    .eq("doctor_id", doctorId)
+    .eq("status", "declined")
+    .eq("patient_ack", false);
+
   return NextResponse.json({ ok: true });
 }
 

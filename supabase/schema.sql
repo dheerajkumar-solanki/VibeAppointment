@@ -121,6 +121,7 @@ create table if not exists public.appointments (
   start_at timestamptz not null,
   end_at timestamptz not null,
   status text not null check (status in ('scheduled','confirmed','completed','cancelled','declined','no_show')),
+  patient_ack boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   -- enforce 30-minute duration

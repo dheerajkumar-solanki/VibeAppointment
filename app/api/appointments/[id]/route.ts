@@ -38,10 +38,7 @@ export async function PATCH(
 
   const body = await request.json().catch(() => null);
   const status = body?.status as string | undefined;
-
-  if (!status || !["scheduled", "confirmed", "completed", "cancelled", "declined", "no_show"].includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-  }
+  const patientAck = body?.patientAck as boolean | undefined;
 
   const { data: appointment } = await supabase
     .from("appointments")
@@ -64,6 +61,34 @@ export async function PATCH(
 
   if (!isPatient && !isDoctor) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Patient acknowledging a declined appointment (dismiss the banner)
+  if (patientAck === true && isPatient) {
+    if (appointment.status !== "declined") {
+      return NextResponse.json(
+        { error: "Only declined appointments can be acknowledged" },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({ patient_ack: true })
+      .eq("id", id);
+
+    if (error) {
+      return NextResponse.json(
+        { error: "Unable to acknowledge appointment" },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  }
+
+  if (!status || !["scheduled", "confirmed", "completed", "cancelled", "declined", "no_show"].includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
   const currentStatus = appointment.status;
