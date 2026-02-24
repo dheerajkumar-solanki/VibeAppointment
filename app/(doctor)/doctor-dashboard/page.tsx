@@ -4,7 +4,7 @@ import { requireUserWithRole } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RatingStars } from "@/components/ui/rating";
-import { Calendar, CalendarDays, Star, Users, Clock, ArrowRight, Settings, Coffee, ChevronRight } from "lucide-react";
+import { Calendar, CalendarDays, Star, Users, Clock, ArrowRight, Settings, Coffee, ChevronRight, AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -133,9 +133,22 @@ export default async function DoctorDashboardPage() {
 
   const todayCount = todayAppointments?.length || 0;
   const upcomingCount = upcomingAppointments?.length || 0;
+  const isPending = doctor?.status === "pending";
 
   return (
     <div className="flex flex-col gap-8 pb-12">
+      {isPending && (
+        <div className="flex items-start gap-3 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-6 py-5 shadow-sm">
+          <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-bold text-amber-900">Profile Pending Approval</p>
+            <p className="mt-1 text-sm text-amber-700">
+              Your profile changes are being reviewed by an admin. You won't appear in public doctor listings until approved.
+            </p>
+          </div>
+        </div>
+      )}
+
       <header className="relative overflow-hidden rounded-[2rem] bg-slate-900 px-8 py-12 text-white shadow-xl sm:px-12 sm:py-16">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')] [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)] opacity-40"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-brand-600 via-slate-900 to-slate-900 opacity-90"></div>

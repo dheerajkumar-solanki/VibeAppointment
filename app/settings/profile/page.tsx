@@ -3,16 +3,19 @@
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { DoctorProfileForm } from "@/components/doctor-profile-form";
-import { User, Settings, Loader2 } from "lucide-react";
+import { User, Loader2 } from "lucide-react";
 
 interface Doctor {
   id: number;
   user_id: string;
+  first_name: string;
+  last_name: string;
   clinic_id: number | null;
   degree: string | null;
   speciality_id: number | null;
   bio: string | null;
   photo_url: string | null;
+  status?: string;
   specialities?: { id: number; name: string } | null;
   clinics?: { id: number; name: string } | null;
 }
@@ -27,6 +30,7 @@ interface Clinic {
   name: string;
   address: string;
   city: string;
+  country?: string;
 }
 
 export default function ProfileSettingsPage() {
@@ -45,39 +49,30 @@ export default function ProfileSettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch doctor profile
-      const { data: doctorData } = await supabase
-        .from("doctors")
-        .select(`
-          *,
-          specialities (id, name),
-          clinics (id, name, address, city)
-        `)
-        .eq("user_id", user.id)
-        .single();
+      const [doctorResult, specResult, clinicResult] = await Promise.all([
+        supabase
+          .from("doctors")
+          .select(`
+            *,
+            specialities (id, name),
+            clinics (id, name, address, city)
+          `)
+          .eq("user_id", user.id)
+          .single(),
+        supabase.from("specialities").select("id, name").order("name"),
+        supabase.from("clinics").select("id, name, address, city, country").order("name"),
+      ]);
 
-      if (doctorData) {
-        // Flatten the nested objects for the form
+      if (doctorResult.data) {
         setDoctor({
-          ...doctorData,
-          specialities: doctorData.specialities,
-          clinics: doctorData.clinics
+          ...doctorResult.data,
+          specialities: doctorResult.data.specialities,
+          clinics: doctorResult.data.clinics,
         });
       }
 
-      // Fetch specialities
-      const { data: specData } = await supabase
-        .from("specialities")
-        .select("id, name");
-      
-      if (specData) setSpecialities(specData);
-
-      // Fetch clinics
-      const { data: clinicData } = await supabase
-        .from("clinics")
-        .select("id, name, address, city");
-      
-      if (clinicData) setClinics(clinicData);
+      if (specResult.data) setSpecialities(specResult.data);
+      if (clinicResult.data) setClinics(clinicResult.data);
 
       setLoading(false);
     }
@@ -108,10 +103,10 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
 
-        <DoctorProfileForm 
-          doctor={doctor} 
-          specialities={specialities} 
-          clinics={clinics} 
+        <DoctorProfileForm
+          doctor={doctor}
+          specialities={specialities}
+          clinics={clinics}
         />
       </div>
     </div>

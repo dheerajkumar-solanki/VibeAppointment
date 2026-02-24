@@ -267,6 +267,13 @@ create policy doctors_insert_own
   for insert
   with check (auth.uid() = user_id);
 
+-- Allow doctors to update their own record
+drop policy if exists doctors_update_own on public.doctors;
+create policy doctors_update_own
+  on public.doctors
+  for update
+  using (auth.uid() = user_id);
+
 -- doctor_availability: readable by all, doctors manage their own
 drop policy if exists doctor_availability_select_all on public.doctor_availability;
 create policy doctor_availability_select_all
