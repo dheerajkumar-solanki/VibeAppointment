@@ -1,7 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DoctorCard } from "@/components/doctor-card";
-import { Badge } from "@/components/ui/badge";
-import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
 import DoctorsSearch from "./doctors-search";
 
 export const dynamic = "force-dynamic";
@@ -40,82 +39,57 @@ export default async function DoctorsPage({
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
 
-  let query = supabase
-    .from("doctors")
-    .select(`
-      first_name,
-      last_name,
-      id,
-      user_id,
-      clinic_id,
-      degree,
-      speciality_id,
-      bio,
-      photo_url,
-      avg_rating_overall,
-      avg_rating_effectiveness,
-      avg_rating_behavior,
-      review_count,
-      created_at,
-      user_profiles (full_name),
-      specialities (name),
-      clinics (name, city)
-    `)
-    .eq("status", "approved");
+  const { data: specialties } = await supabase
+    .from("specialities")
+    .select("name")
+    .order("name");
 
-  // Apply search filter
-  if (params.search) {
-    const searchTerm = params.search.toLowerCase();
-    query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,specialities.name.ilike.%${searchTerm}%,clinics.name.ilike.%${searchTerm}%`);
-  }
+  const baseFields = `
+    first_name, last_name, id, user_id, clinic_id, degree, speciality_id,
+    bio, photo_url, avg_rating_overall, avg_rating_effectiveness,
+    avg_rating_behavior, review_count, created_at,
+    user_profiles (full_name),
+    clinics (name, city)
+  `;
 
-  // Apply specialty filter - filter in memory since relational filters are complex
-  let allDoctors;
+  let query;
+
   if (params.specialty) {
-    const { data: doctorsWithSpecialty } = await supabase
+    query = supabase
       .from("doctors")
-      .select(`
-        first_name,
-        last_name,
-        id,
-        user_id,
-        clinic_id,
-        degree,
-        speciality_id,
-        bio,
-        photo_url,
-        avg_rating_overall,
-        avg_rating_effectiveness,
-        avg_rating_behavior,
-        review_count,
-        created_at,
-        user_profiles (full_name),
-        specialities (name),
-        clinics (name, city)
-      `)
+      .select(`${baseFields}, specialities!inner (name)`)
       .eq("status", "approved")
       .eq("specialities.name", params.specialty);
-    
-    allDoctors = doctorsWithSpecialty || [];
+  } else {
+    query = supabase
+      .from("doctors")
+      .select(`${baseFields}, specialities (name)`)
+      .eq("status", "approved");
   }
 
   let { data: doctors, error } = await query.order("avg_rating_overall", { ascending: false });
-
-  // If specialty filter was applied, use the filtered results
-  if (params.specialty && allDoctors) {
-    doctors = allDoctors;
-  }
 
   if (error) {
     console.error("Error fetching doctors:", error);
   }
 
+  if (params.search && doctors) {
+    const term = params.search.toLowerCase();
+    doctors = doctors.filter((doc: any) => {
+      const name = `${doc.first_name} ${doc.last_name}`.toLowerCase();
+      const spec = (doc.specialities?.name || "").toLowerCase();
+      const clinic = (doc.clinics?.name || "").toLowerCase();
+      const city = (doc.clinics?.city || "").toLowerCase();
+      return name.includes(term) || spec.includes(term) || clinic.includes(term) || city.includes(term);
+    });
+  }
+
   const doctorsList = (doctors || []).map((doc: any) => ({
     ...doc,
     full_name: `${doc.first_name} ${doc.last_name}`.trim() || "Unknown Doctor",
-    speciality_name: doc.specialities?.[0]?.name,
-    clinic_name: doc.clinics?.[0]?.name,
-    clinic_city: doc.clinics?.[0]?.city,
+    speciality_name: doc.specialities?.name,
+    clinic_name: doc.clinics?.name,
+    clinic_city: doc.clinics?.city,
   }));
 
   return (
@@ -136,7 +110,7 @@ export default async function DoctorsPage({
       </section>
 
       {/* Search and Filters */}
-      <DoctorsSearch />
+      <DoctorsSearch specialties={(specialties || []).map((s) => s.name)} />
 
       {/* Results Section */}
       <section>

@@ -1,53 +1,57 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
-export default function DoctorsSearch() {
+interface DoctorsSearchProps {
+  specialties?: string[];
+}
+
+export default function DoctorsSearch({ specialties = [] }: DoctorsSearchProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchValue, setSearchValue] = useState(searchParams.get("search") || "");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(!!searchParams.get("specialty"));
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const createQueryString = useCallback(
-    (name: string, value: string | null) => {
+  const navigateWithParams = useCallback(
+    (overrides: Record<string, string | null>) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(name, value);
-      } else {
-        params.delete(name);
+      for (const [key, value] of Object.entries(overrides)) {
+        if (value) {
+          params.set(key, value);
+        } else {
+          params.delete(key);
+        }
       }
-      return params.toString();
+      const qs = params.toString();
+      router.push(`/doctors${qs ? `?${qs}` : ""}`);
     },
-    [searchParams]
+    [router, searchParams]
   );
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const currentSearch = searchParams.get("search") || "";
+      if (searchValue !== currentSearch) {
+        navigateWithParams({ search: searchValue || null });
+      }
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchValue, navigateWithParams, searchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchValue) {
-      params.set("search", searchValue);
-    }
-    if (searchParams.get("specialty")) {
-      params.set("specialty", searchParams.get("specialty")!);
-    }
-    const queryString = params.toString();
-    router.push(`/doctors${queryString ? `?${queryString}` : ""}`);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    navigateWithParams({ search: searchValue || null });
   };
 
   const handleFilterChange = (key: string, value: string | null) => {
-    const params = new URLSearchParams();
-    if (searchValue) {
-      params.set("search", searchValue);
-    }
-    if (key !== "specialty" && searchParams.get("specialty")) {
-      params.set("specialty", searchParams.get("specialty")!);
-    }
-    if (value) {
-      params.set(key, value);
-    }
-    router.push(`/doctors${params.toString() ? `?${params.toString()}` : ""}`);
+    navigateWithParams({ [key]: value });
   };
 
   const clearFilters = () => {
@@ -120,12 +124,9 @@ export default function DoctorsSearch() {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               >
                 <option value="">All Specialties</option>
-                <option value="Cardiology">Cardiology</option>
-                <option value="Dermatology">Dermatology</option>
-                <option value="Neurology">Neurology</option>
-                <option value="Orthopedics">Orthopedics</option>
-                <option value="Pediatrics">Pediatrics</option>
-                <option value="General Medicine">General Medicine</option>
+                {specialties.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
               </select>
             </div>
           </div>

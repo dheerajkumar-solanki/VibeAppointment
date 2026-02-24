@@ -188,12 +188,27 @@ alter table public.reviews enable row level security;
 
 -- Basic RLS policies (adjust as needed)
 
--- user_profiles: users manage only their own profile
+-- user_profiles: users can always read their own profile
 drop policy if exists user_profiles_select_self on public.user_profiles;
 create policy user_profiles_select_self
   on public.user_profiles
   for select
   using (auth.uid() = id);
+
+-- user_profiles: doctors can read profiles of patients who have appointments with them
+drop policy if exists user_profiles_select_doctor_patients on public.user_profiles;
+create policy user_profiles_select_doctor_patients
+  on public.user_profiles
+  for select
+  using (
+    exists (
+      select 1
+      from public.appointments a
+      join public.doctors d on d.id = a.doctor_id
+      where a.patient_id = user_profiles.id
+        and d.user_id = auth.uid()
+    )
+  );
 
 drop policy if exists user_profiles_update_self on public.user_profiles;
 create policy user_profiles_update_self
