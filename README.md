@@ -32,15 +32,15 @@ A modern healthcare appointment booking platform built with Next.js and Supabase
 
 ```bash
 # 1. Clone
-git clone https://github.com/<your-org>/VibeAppointment.git
+git clone https://github.com/dheerajkumar-solanki/VibeAppointment.git
 cd VibeAppointment
 
 # 2. Install dependencies
 npm install
 
 # 3. Configure environment
-cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
+cp .env.example .env
+# Edit .env with your Supabase credentials
 
 # 4. Set up the database
 # Run supabase/schema.sql in your Supabase SQL editor
