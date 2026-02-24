@@ -19,7 +19,7 @@ async function handleCallback(request: NextRequest) {
   // Log any OAuth errors
   if (error) {
     console.error("OAuth error:", error, errorDescription);
-    return NextResponse.redirect(`${requestUrl.origin}/login?error=${error}`);
+    return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent(error)}`);
   }
 
   if (code) {

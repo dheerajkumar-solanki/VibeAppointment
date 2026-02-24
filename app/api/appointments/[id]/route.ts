@@ -32,7 +32,7 @@ export async function PATCH(
 
   const { id: idStr } = await context.params;
   const id = Number.parseInt(idStr, 10);
-  if (!id) {
+  if (Number.isNaN(id)) {
     return NextResponse.json({ error: "Invalid appointment id" }, { status: 400 });
   }
 
@@ -41,6 +41,38 @@ export async function PATCH(
 
   if (!status || !["scheduled", "completed", "cancelled", "no_show"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  // Verify the user is either the patient or the doctor for this appointment
+  const { data: appointment } = await supabase
+    .from("appointments")
+    .select("id, patient_id, doctor_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!appointment) {
+    return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+  }
+
+  const { data: doctor } = await supabase
+    .from("doctors")
+    .select("user_id")
+    .eq("id", appointment.doctor_id)
+    .maybeSingle();
+
+  const isPatient = appointment.patient_id === user.id;
+  const isDoctor = doctor?.user_id === user.id;
+
+  if (!isPatient && !isDoctor) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Patients can only cancel; doctors can cancel, complete, or mark no-show
+  if (isPatient && status !== "cancelled") {
+    return NextResponse.json(
+      { error: "Patients can only cancel appointments" },
+      { status: 403 }
+    );
   }
 
   const { error } = await supabase

@@ -46,14 +46,24 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Update doctor status to approved
-    const { error: updateError } = await supabase
+    const doctorIdNum = parseInt(doctorId, 10);
+    if (Number.isNaN(doctorIdNum)) {
+      return NextResponse.json({ error: "Invalid doctor ID" }, { status: 400 });
+    }
+
+    const { data: updated, error: updateError } = await supabase
       .from("doctors")
       .update({ status: "approved" })
-      .eq("id", parseInt(doctorId));
+      .eq("id", doctorIdNum)
+      .select("id")
+      .maybeSingle();
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });
+    }
+
+    if (!updated) {
+      return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
     }
 
     return NextResponse.redirect(

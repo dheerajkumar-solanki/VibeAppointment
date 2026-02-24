@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => cookieStore.set(name, value));
+          cookiesToSet.forEach(({ name, value }) => cookieStore.set(name, value, { path: "/" }));
         },
       },
     }
@@ -35,15 +35,18 @@ export async function POST(request: NextRequest) {
   const ratingBehavior = Number.parseInt(body?.ratingBehavior, 10);
   const comment = (body?.comment as string | undefined) ?? null;
 
-  if (
-    !doctorId ||
-    !appointmentId ||
-    !Number.isFinite(ratingEffectiveness) ||
-    !Number.isFinite(ratingOverall) ||
-    !Number.isFinite(ratingBehavior)
-  ) {
+  const isValidRating = (r: number) => Number.isFinite(r) && r >= 1 && r <= 5;
+
+  if (!doctorId || !appointmentId) {
     return NextResponse.json(
-      { error: "Missing or invalid review fields" },
+      { error: "Missing doctor or appointment ID" },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidRating(ratingEffectiveness) || !isValidRating(ratingOverall) || !isValidRating(ratingBehavior)) {
+    return NextResponse.json(
+      { error: "Ratings must be integers between 1 and 5" },
       { status: 400 }
     );
   }
