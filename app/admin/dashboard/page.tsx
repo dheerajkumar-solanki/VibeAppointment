@@ -38,7 +38,7 @@ export default async function AdminDashboardPage() {
       status,
       degree,
       bio,
-      user_profiles (full_name, email),
+      user_profiles (full_name),
       specialities (name),
       clinics (name, address)
     `)
@@ -154,7 +154,7 @@ export default async function AdminDashboardPage() {
                           Pending Review
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500 mt-1">{(doctor.user_profiles as any)?.[0]?.email || (doctor.user_profiles as any)?.email}</p>
+                      <p className="text-sm text-slate-500 mt-1">{(doctor.user_profiles as any)?.full_name || ""}</p>
                     </div>
                     
                     <div className="p-5 space-y-4">
@@ -165,11 +165,11 @@ export default async function AdminDashboardPage() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Speciality</p>
-                          <p className="font-medium text-slate-900">{(doctor.specialities as any)?.[0]?.name || (doctor.specialities as any)?.name || "Not specified"}</p>
+                          <p className="font-medium text-slate-900">{(doctor.specialities as any)?.name || "Not specified"}</p>
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Clinic</p>
-                          <p className="font-medium text-slate-900">{(doctor.clinics as any)?.[0]?.name || (doctor.clinics as any)?.name}</p>
+                          <p className="font-medium text-slate-900">{(doctor.clinics as any)?.name || "-"}</p>
                         </div>
                         {doctor.bio && (
                           <div className="col-span-2">
@@ -224,10 +224,10 @@ export default async function AdminDashboardPage() {
                   <tr key={doctor.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <p className="font-bold text-slate-900">Dr. {doctor.first_name} {doctor.last_name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{(doctor.clinics as any)?.[0]?.name || (doctor.clinics as any)?.name || "-"}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{(doctor.clinics as any)?.name || "-"}</p>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-600">
-                      {(doctor.specialities as any)?.[0]?.name || (doctor.specialities as any)?.name || "-"}
+                      {(doctor.specialities as any)?.name || "-"}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${

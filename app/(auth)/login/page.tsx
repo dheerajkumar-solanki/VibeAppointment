@@ -5,6 +5,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, Shield, HeartPulse } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,11 +31,14 @@ export default function LoginPage() {
 
       if (data.error) {
         setError(data.error);
+        toast.error(data.error);
       } else {
         setOtpSent(true);
+        toast.success("Verification code sent to your email!");
       }
     } catch (err) {
       setError("An unexpected error occurred");
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +63,9 @@ export default function LoginPage() {
 
       if (verifyError) {
         setError(verifyError.message);
+        toast.error(verifyError.message);
       } else {
+        toast.success("Successfully signed in!");
         // Create profile if it doesn't exist (for OTP login)
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -75,9 +81,10 @@ export default function LoginPage() {
         // Force a full page navigation to ensure redirect works
         window.location.href = "/dashboard";
       }
-    } catch (err) {
-      setError("An unexpected error occurred");
-    } finally {
+                } catch (err) {
+                  setError("An unexpected error occurred");
+                  toast.error("An unexpected error occurred");
+                } finally {
       setIsLoading(false);
     }
   };
@@ -200,9 +207,11 @@ export default function LoginPage() {
                 });
                 if (error) {
                   setError(error.message);
+                  toast.error(error.message);
                 }
               } catch (err) {
                 setError("Failed to connect with Google");
+                toast.error("Failed to connect with Google");
               }
             }}
             className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:shadow-sm transition-all focus:ring-4 focus:ring-slate-100"

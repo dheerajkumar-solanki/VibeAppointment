@@ -61,16 +61,17 @@ export function UserMenu({ user }: { user: { email?: string; user_metadata?: Rec
       </button>
       
       {open && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 mt-3 w-56 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white/90 p-1.5 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-all">
           <a
             href="/dashboard"
-            className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-brand-600"
           >
             Dashboard
           </a>
+          <div className="my-1 h-px w-full bg-slate-100"></div>
           <button
             onClick={handleSignOut}
-            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+            className="w-full rounded-xl px-4 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
           >
             Sign out
           </button>

@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UserMenu } from "@/components/user-menu";
 import { CalendarHeart } from "lucide-react";
 import Link from "next/link";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -39,6 +40,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} flex min-h-screen flex-col bg-slate-50 text-slate-900 antialiased`}>
+        <Toaster position="bottom-right" richColors />
         {/* Sticky Glassmorphism Header */}
         <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md transition-all">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
