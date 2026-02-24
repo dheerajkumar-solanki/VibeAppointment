@@ -97,28 +97,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Update doctor's average ratings
-  const { data: stats } = await supabase
-    .from("reviews")
-    .select("rating_overall, rating_effectiveness, rating_behavior")
-    .eq("doctor_id", doctorId);
-
-  if (stats && stats.length > 0) {
-    const count = stats.length;
-    const avgOverall = stats.reduce((sum, r) => sum + r.rating_overall, 0) / count;
-    const avgEffectiveness = stats.reduce((sum, r) => sum + r.rating_effectiveness, 0) / count;
-    const avgBehavior = stats.reduce((sum, r) => sum + r.rating_behavior, 0) / count;
-
-    await supabase
-      .from("doctors")
-      .update({
-        avg_rating_overall: avgOverall,
-        avg_rating_effectiveness: avgEffectiveness,
-        avg_rating_behavior: avgBehavior,
-        review_count: count,
-      })
-      .eq("id", doctorId);
-  }
+  // Doctor avg ratings and review_count are updated automatically
+  // by the trg_update_doctor_ratings Postgres trigger.
 
   return NextResponse.json({ ok: true });
 }

@@ -164,6 +164,47 @@ CREATE TRIGGER update_reviews_updated_at
 create unique index if not exists reviews_unique_appointment
   on public.reviews (appointment_id);
 
+-- Recalculate doctor avg ratings whenever reviews change
+CREATE OR REPLACE FUNCTION update_doctor_ratings()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  target_doctor_id bigint;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    target_doctor_id := OLD.doctor_id;
+  ELSE
+    target_doctor_id := NEW.doctor_id;
+  END IF;
+
+  UPDATE public.doctors
+  SET
+    avg_rating_overall     = COALESCE(sub.avg_overall, 0),
+    avg_rating_effectiveness = COALESCE(sub.avg_effectiveness, 0),
+    avg_rating_behavior    = COALESCE(sub.avg_behavior, 0),
+    review_count           = COALESCE(sub.cnt, 0)
+  FROM (
+    SELECT
+      ROUND(AVG(rating_overall)::numeric, 1)       AS avg_overall,
+      ROUND(AVG(rating_effectiveness)::numeric, 1)  AS avg_effectiveness,
+      ROUND(AVG(rating_behavior)::numeric, 1)       AS avg_behavior,
+      COUNT(*)::integer                              AS cnt
+    FROM public.reviews
+    WHERE doctor_id = target_doctor_id
+  ) sub
+  WHERE id = target_doctor_id;
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_doctor_ratings
+  AFTER INSERT OR UPDATE OR DELETE ON public.reviews
+  FOR EACH ROW
+  EXECUTE FUNCTION update_doctor_ratings();
+
 -- Helpful indexes
 create index if not exists idx_appointments_doctor_start
   on public.appointments (doctor_id, start_at);
