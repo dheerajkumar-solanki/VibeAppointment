@@ -46,7 +46,7 @@ export async function getAvailableSlotsForDoctorOnDate(
     .from("appointments")
     .select("start_at, end_at, status")
     .eq("doctor_id", doctorId)
-    .in("status", ["scheduled", "completed"])
+    .in("status", ["scheduled", "confirmed", "completed"])
     .gte("start_at", startOfDay.toISOString())
     .lte("end_at", endOfDay.toISOString());
 

@@ -1,10 +1,9 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireUserWithRole } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Activity, MapPin, Clock, ArrowRight, User, Stethoscope } from "lucide-react";
+import { Calendar, Activity, MapPin, Clock, ArrowRight, User, Stethoscope, XCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -46,9 +45,27 @@ export default async function PatientDashboardPage() {
       )
     `)
     .eq("patient_id", user.id)
-    .eq("status", "scheduled")
+    .in("status", ["scheduled", "confirmed"])
     .gte("start_at", now)
     .order("start_at", { ascending: true })
+    .limit(5);
+
+  // Fetch recently declined appointments
+  const { data: declinedAppointments } = await supabase
+    .from("appointments")
+    .select(`
+      *,
+      doctors (
+        first_name,
+        last_name,
+        user_profiles (full_name),
+        specialities (name),
+        clinics (name)
+      )
+    `)
+    .eq("patient_id", user.id)
+    .eq("status", "declined")
+    .order("updated_at", { ascending: false })
     .limit(5);
 
   // Fetch all completed appointments
@@ -122,6 +139,53 @@ export default async function PatientDashboardPage() {
         </div>
       </header>
 
+      {/* Declined Appointments */}
+      {declinedAppointments && declinedAppointments.length > 0 && (
+        <section className="rounded-[1.5rem] bg-red-50/50 ring-1 ring-red-200/60 p-6 sm:px-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-600">
+              <XCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Declined Appointments</h2>
+              <p className="text-xs text-slate-500">These appointments were declined by the doctor. You can book a different time slot.</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {(declinedAppointments as Appointment[]).map((apt) => (
+              <div
+                key={apt.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-red-200 bg-white p-4"
+              >
+                <div className="flex gap-3 items-center">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900">
+                      Dr. {apt.doctors?.first_name} {apt.doctors?.last_name}
+                    </p>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">
+                      {new Date(apt.start_at).toLocaleString(undefined, {
+                        weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="error" className="w-fit">Declined</Badge>
+                  <Link href={`/appointments/new/${apt.doctor_id}`}>
+                    <Button size="sm" variant="outline" className="rounded-full text-xs">
+                      Rebook
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="grid gap-8 md:grid-cols-2">
         {/* Upcoming Appointments */}
         <div className="flex flex-col rounded-[1.5rem] bg-white shadow-sm ring-1 ring-slate-200/60 overflow-hidden">
@@ -177,7 +241,12 @@ export default async function PatientDashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <Badge variant="info" className="w-fit">Scheduled</Badge>
+                    <Badge
+                      variant={apt.status === "confirmed" ? "success" : "info"}
+                      className="w-fit capitalize"
+                    >
+                      {apt.status === "scheduled" ? "Awaiting Confirmation" : "Confirmed"}
+                    </Badge>
                   </div>
                 ))}
               </div>

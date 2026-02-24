@@ -4,7 +4,8 @@ import { requireUserWithRole } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RatingStars } from "@/components/ui/rating";
-import { Calendar, CalendarDays, Star, Users, Clock, ArrowRight, Settings, Coffee, ChevronRight, AlertTriangle } from "lucide-react";
+import { AppointmentActions } from "@/components/appointment-actions";
+import { Calendar, CalendarDays, Star, Users, Clock, Settings, Coffee, ChevronRight, AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export default async function DoctorDashboardPage() {
     .from("appointments")
     .select("*")
     .eq("doctor_id", doctor?.id)
-    .eq("status", "scheduled")
+    .in("status", ["scheduled", "confirmed"])
     .gte("start_at", today.toISOString())
     .lt("start_at", nextWeek.toISOString())
     .order("start_at", { ascending: true })
@@ -278,9 +279,7 @@ export default async function DoctorDashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <Badge variant={apt.status === "completed" ? "success" : "info"} className="w-fit">
-                        {apt.status}
-                      </Badge>
+                      <AppointmentActions appointmentId={apt.id} currentStatus={apt.status} />
                     </div>
                   ))}
                 </div>
@@ -307,7 +306,7 @@ export default async function DoctorDashboardPage() {
                   {(upcomingAppointments as Appointment[]).slice(0, 5).map((apt) => (
                     <div
                       key={apt.id}
-                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 transition-all hover:shadow-sm"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-all hover:shadow-sm"
                     >
                       <div>
                         <p className="font-bold text-slate-900">
@@ -318,7 +317,7 @@ export default async function DoctorDashboardPage() {
                           {new Date(apt.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                      <Badge variant="info" className="bg-brand-50 text-brand-700 hover:bg-brand-100 border-none">Scheduled</Badge>
+                      <AppointmentActions appointmentId={apt.id} currentStatus={apt.status} />
                     </div>
                   ))}
                 </div>

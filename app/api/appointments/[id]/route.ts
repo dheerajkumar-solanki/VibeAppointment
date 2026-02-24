@@ -39,14 +39,13 @@ export async function PATCH(
   const body = await request.json().catch(() => null);
   const status = body?.status as string | undefined;
 
-  if (!status || !["scheduled", "completed", "cancelled", "no_show"].includes(status)) {
+  if (!status || !["scheduled", "confirmed", "completed", "cancelled", "declined", "no_show"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  // Verify the user is either the patient or the doctor for this appointment
   const { data: appointment } = await supabase
     .from("appointments")
-    .select("id, patient_id, doctor_id")
+    .select("id, patient_id, doctor_id, status")
     .eq("id", id)
     .maybeSingle();
 
@@ -67,12 +66,35 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Patients can only cancel; doctors can cancel, complete, or mark no-show
-  if (isPatient && status !== "cancelled") {
-    return NextResponse.json(
-      { error: "Patients can only cancel appointments" },
-      { status: 403 }
-    );
+  const currentStatus = appointment.status;
+
+  if (isPatient) {
+    if (status !== "cancelled") {
+      return NextResponse.json(
+        { error: "Patients can only cancel appointments" },
+        { status: 403 }
+      );
+    }
+    if (!["scheduled", "confirmed"].includes(currentStatus)) {
+      return NextResponse.json(
+        { error: "This appointment can no longer be cancelled" },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (isDoctor) {
+    const validTransitions: Record<string, string[]> = {
+      scheduled: ["confirmed", "declined"],
+      confirmed: ["completed", "cancelled", "no_show"],
+    };
+    const allowed = validTransitions[currentStatus];
+    if (!allowed || !allowed.includes(status)) {
+      return NextResponse.json(
+        { error: `Cannot transition from '${currentStatus}' to '${status}'` },
+        { status: 400 }
+      );
+    }
   }
 
   const { error } = await supabase

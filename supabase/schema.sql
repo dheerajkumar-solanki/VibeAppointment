@@ -120,14 +120,19 @@ create table if not exists public.appointments (
   clinic_id bigint not null references public.clinics(id) on delete restrict,
   start_at timestamptz not null,
   end_at timestamptz not null,
-  status text not null check (status in ('scheduled','completed','cancelled','no_show')),
+  status text not null check (status in ('scheduled','confirmed','completed','cancelled','declined','no_show')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   -- enforce 30-minute duration
   check (end_at = start_at + interval '30 minutes'),
-  -- avoid overlapping identical start times for a doctor
-  unique (doctor_id, start_at)
+  -- no inline unique; see partial index below
 );
+
+-- Only enforce slot uniqueness for active appointments so that
+-- declined / cancelled / no-show slots can be rebooked.
+create unique index if not exists appointments_active_slot
+  on public.appointments (doctor_id, start_at)
+  where status in ('scheduled', 'confirmed', 'completed');
 
 -- Add trigger for appointments
 CREATE TRIGGER update_appointments_updated_at
