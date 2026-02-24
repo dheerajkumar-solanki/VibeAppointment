@@ -16,7 +16,7 @@ export async function PATCH(
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => cookieStore.set(name, value));
+          cookiesToSet.forEach(({ name, value }) => cookieStore.set(name, value, { path: "/" }));
         },
       },
     }

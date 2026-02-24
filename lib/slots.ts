@@ -39,8 +39,8 @@ export async function getAvailableSlotsForDoctorOnDate(
     .from("doctor_time_off")
     .select("start_at, end_at")
     .eq("doctor_id", doctorId)
-    .gte("start_at", startOfDay.toISOString())
-    .lte("end_at", endOfDay.toISOString());
+    .lt("start_at", endOfDay.toISOString())
+    .gt("end_at", startOfDay.toISOString());
 
   const { data: existingAppointments } = await supabase
     .from("appointments")

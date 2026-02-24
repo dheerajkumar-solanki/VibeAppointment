@@ -35,6 +35,16 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_admin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Update doctor status to rejected
     const { error: updateError } = await supabase
       .from("doctors")

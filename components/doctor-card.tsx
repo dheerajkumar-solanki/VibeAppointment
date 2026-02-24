@@ -93,7 +93,7 @@ export function DoctorCard({ doctor }: DoctorCardProps) {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 rounded-md bg-yellow-50 px-2 py-1 text-xs font-bold text-yellow-700">
                     <Award className="h-3.5 w-3.5" />
-                    {doctor.avg_rating_overall.toFixed(1)}
+                    {(doctor.avg_rating_overall ?? 0).toFixed(1)}
                   </div>
                   <span className="text-xs font-medium text-slate-500">
                     ({doctor.review_count} review{doctor.review_count !== 1 ? "s" : ""})

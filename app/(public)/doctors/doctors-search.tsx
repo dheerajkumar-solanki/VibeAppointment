@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SlidersHorizontal, X, Check } from "lucide-react";
 
 interface DoctorsFilterProps {
@@ -20,6 +20,11 @@ export default function DoctorsFilter({ specialties, clinics }: DoctorsFilterPro
   const [showFilters, setShowFilters] = useState(hasActiveFilters);
   const [selectedSpecialty, setSelectedSpecialty] = useState(activeSpecialty);
   const [selectedClinic, setSelectedClinic] = useState(activeClinic);
+
+  useEffect(() => {
+    setSelectedSpecialty(activeSpecialty);
+    setSelectedClinic(activeClinic);
+  }, [activeSpecialty, activeClinic]);
 
   const isDirty = selectedSpecialty !== activeSpecialty || selectedClinic !== activeClinic;
 

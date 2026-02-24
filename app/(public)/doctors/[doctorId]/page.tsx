@@ -97,8 +97,8 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
   const doctorFull = {
     ...doctor,
     full_name: `${doctor.first_name} ${doctor.last_name}`.trim() || "Unknown Doctor",
-    speciality_name: doctor.specialities?.[0]?.name,
-    clinic: doctor.clinics?.[0],
+    speciality_name: doctor.specialities?.name,
+    clinic: doctor.clinics,
   };
 
   return (
@@ -167,7 +167,7 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
                   <Star className="h-5 w-5 fill-current" />
                 </div>
                 <div>
-                  <div className="font-bold text-slate-900">{doctorFull.avg_rating_overall.toFixed(1)}</div>
+                  <div className="font-bold text-slate-900">{(doctorFull.avg_rating_overall ?? 0).toFixed(1)}</div>
                   <div className="text-xs text-slate-500">{doctorFull.review_count} Reviews</div>
                 </div>
               </div>
@@ -227,7 +227,7 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
               {doctorFull.review_count > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-lg">
                   <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                  <span className="font-bold text-slate-900">{doctorFull.avg_rating_overall.toFixed(1)}</span>
+                  <span className="font-bold text-slate-900">{(doctorFull.avg_rating_overall ?? 0).toFixed(1)}</span>
                   <span className="text-sm text-slate-500">({doctorFull.review_count})</span>
                 </div>
               )}

@@ -62,6 +62,10 @@ export default async function NewReviewPage({ params, searchParams }: NewReviewP
     .eq("id", doctorIdNum)
     .single();
 
+  if (!doctor) {
+    notFound();
+  }
+
   return (
     <div className="flex flex-col gap-8 pb-16 max-w-5xl mx-auto">
       {/* Header */}

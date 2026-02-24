@@ -244,8 +244,6 @@ create policy clinics_insert
   for insert
   to authenticated
   with check (true);
-  for select
-  using (auth.role() = 'authenticated');
 
 drop policy if exists specialities_select_all on public.specialities;
 create policy specialities_select_all
@@ -273,6 +271,15 @@ create policy doctors_update_own
   on public.doctors
   for update
   using (auth.uid() = user_id);
+
+-- Allow admins to update any doctor record (approve/reject)
+drop policy if exists doctors_update_admin on public.doctors;
+create policy doctors_update_admin
+  on public.doctors
+  for update
+  using (
+    (select is_admin from public.user_profiles where id = auth.uid())
+  );
 
 -- doctor_availability: readable by all, doctors manage their own
 drop policy if exists doctor_availability_select_all on public.doctor_availability;

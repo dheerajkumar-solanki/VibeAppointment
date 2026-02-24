@@ -16,7 +16,7 @@ export async function getUserAndProfile() {
 
   const { data: profile } = await supabase
     .from("user_profiles")
-    .select("id, role, full_name")
+    .select("id, role, full_name, is_admin")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -36,12 +36,25 @@ export async function requireUserWithRole(role?: UserRole) {
   }
 
   if (role && profile.role !== role) {
-    // Redirect users to their appropriate dashboard based on stored role
     if (profile.role === "patient") {
       redirect("/dashboard");
     } else if (profile.role === "doctor") {
       redirect("/doctor-dashboard");
     }
+  }
+
+  return { user, profile };
+}
+
+export async function requireAdmin() {
+  const { user, profile } = await getUserAndProfile();
+
+  if (!user || !profile) {
+    redirect("/login");
+  }
+
+  if (!profile.is_admin) {
+    redirect("/dashboard");
   }
 
   return { user, profile };

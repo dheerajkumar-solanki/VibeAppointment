@@ -69,11 +69,10 @@ export default function LoginPage() {
         // Create profile if it doesn't exist (for OTP login)
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { error: profileError } = await supabase
+          await supabase
             .from("user_profiles")
             .upsert({
               id: user.id,
-              email: user.email,
               full_name: user.email?.split('@')[0] || 'User',
               role: "patient",
             }, { onConflict: "id", ignoreDuplicates: true });
