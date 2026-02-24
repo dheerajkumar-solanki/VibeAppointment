@@ -7,6 +7,8 @@ A modern healthcare appointment booking platform built with Next.js and Supabase
 ## Highlights
 
 - **Instant booking** — browse real-time availability and confirm in seconds.
+- **Flexible cancellation** — patients can cancel appointments anytime before the visit; the slot is instantly freed for others.
+- **Doctor workflow** — doctors confirm, decline, or complete appointments from their dashboard.
 - **Three-tier roles** — patients, doctors, and admins each have a dedicated experience.
 - **Verified doctors** — every practitioner goes through an admin approval workflow.
 - **Honest reviews** — only patients who completed an appointment can leave ratings.
@@ -71,13 +73,17 @@ For the full walkthrough — including auth provider setup, seed data, and deplo
 VibeAppointment/
 ├── app/                     # Next.js App Router
 │   ├── (auth)/              #   Login page
-│   ├── (doctor)/            #   Doctor dashboard
-│   ├── (patient)/           #   Patient dashboard & booking
-│   ├── (public)/            #   Public doctor directory
-│   ├── admin/               #   Admin panel
+│   ├── (doctor)/            #   Doctor dashboard (confirm, decline, complete appointments)
+│   ├── (patient)/           #   Patient dashboard (cancel appointments, view declined notices)
+│   │   ├── dashboard/       #     Dashboard with upcoming/past appointments
+│   │   ├── appointments/    #     New appointment booking flow
+│   │   └── reviews/         #     Leave reviews for completed visits
+│   ├── (public)/            #   Public doctor directory & profiles
+│   ├── admin/               #   Admin panel (approve/reject doctors)
 │   ├── api/                 #   REST API routes
-│   └── settings/            #   Doctor settings
-├── components/              # Reusable React components
+│   ├── register/            #   Doctor registration
+│   └── settings/            #   Doctor settings (profile, availability, time-off)
+├── components/              # Reusable React components & UI primitives
 ├── lib/                     # Supabase clients, auth helpers, slot logic
 ├── supabase/                # Database schema (schema.sql)
 ├── docs/                    # Extended documentation

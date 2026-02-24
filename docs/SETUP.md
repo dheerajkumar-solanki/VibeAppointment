@@ -108,6 +108,8 @@ To explore the app fully, you may want to create some initial records:
 2. **Register as a doctor** — visit `/register` and fill out the form. The application will be in "pending" status.
 3. **Approve the doctor** — set `is_admin = true` on your `user_profiles` row in Supabase, then visit `/admin/dashboard` to approve the doctor.
 4. **Add availability** — as the approved doctor, go to `/settings/availability` and add weekly time slots.
+5. **Book an appointment** — as a patient, browse `/doctors`, pick a doctor, and book a slot.
+6. **Test cancellation** — from the patient dashboard at `/dashboard`, cancel an upcoming appointment and verify the slot becomes available again.
 
 ---
 
@@ -125,22 +127,37 @@ To explore the app fully, you may want to create some initial records:
 ```
 VibeAppointment/
 ├── app/                    # Next.js App Router (pages, layouts, API routes)
-│   ├── (auth)/             # Authentication pages
-│   ├── (doctor)/           # Doctor dashboard
-│   ├── (patient)/          # Patient dashboard & booking
-│   ├── (public)/           # Public doctor listing
-│   ├── admin/              # Admin panel
+│   ├── (auth)/             # Authentication pages (login)
+│   ├── (doctor)/           # Doctor dashboard (confirm, decline, complete appointments)
+│   ├── (patient)/          # Patient dashboard, booking, reviews
+│   │   ├── dashboard/      #   Dashboard with cancel & declined-notice features
+│   │   ├── appointments/   #   New appointment booking flow
+│   │   └── reviews/        #   Leave reviews for completed visits
+│   ├── (public)/           # Public doctor listing & profiles
+│   ├── admin/              # Admin panel (approve/reject doctors)
 │   ├── api/                # API route handlers
+│   │   ├── appointments/   #   Create & update appointments
+│   │   ├── auth/           #   Login & OTP
+│   │   ├── doctor/         #   Doctor registration
+│   │   ├── doctors/        #   Slot availability
+│   │   ├── reviews/        #   Submit reviews
+│   │   └── admin/          #   Approve/reject doctors
+│   ├── register/           # Doctor registration page
 │   ├── settings/           # Doctor settings (profile, availability, time-off)
 │   └── layout.tsx          # Root layout
 ├── components/             # Reusable React components
-│   └── ui/                 # Primitive UI components (Button, Card, etc.)
+│   ├── ui/                 # Primitive UI components (Button, Card, Badge, etc.)
+│   ├── cancel-appointment-button.tsx   # Patient cancel with confirmation
+│   ├── appointment-actions.tsx         # Doctor confirm/decline/complete controls
+│   ├── dismiss-decline-button.tsx      # Patient dismiss declined notification
+│   ├── slot-picker.tsx                 # Date & slot selection for booking
+│   └── ...                 # Other feature components
 ├── lib/                    # Shared utilities
 │   ├── supabase/           # Supabase client helpers (server & browser)
-│   ├── auth.ts             # Auth guard helpers
+│   ├── auth.ts             # Auth guard helpers (requireUserWithRole)
 │   └── slots.ts            # Appointment slot calculation
 ├── supabase/
-│   └── schema.sql          # Database schema & RLS policies
+│   └── schema.sql          # Database schema, indexes, triggers & RLS policies
 ├── docs/                   # Project documentation
 ├── middleware.ts            # Auth middleware for route protection
 ├── tailwind.config.ts       # Tailwind CSS configuration

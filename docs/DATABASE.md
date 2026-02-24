@@ -128,19 +128,23 @@ Explicit blocked periods (vacations, leave days, etc.).
 
 Individual 30-minute appointment slots.
 
-| Column       | Type            | Notes                                                    |
-| ------------ | --------------- | -------------------------------------------------------- |
-| `id`         | `bigserial` (PK)|                                                         |
-| `doctor_id`  | `bigint`        | FK to `doctors`                                          |
-| `patient_id` | `uuid`          | FK to `user_profiles`                                    |
-| `clinic_id`  | `bigint`        | FK to `clinics`                                          |
-| `start_at`   | `timestamptz`   |                                                          |
-| `end_at`     | `timestamptz`   | Must equal `start_at + 30 minutes` (enforced by check)   |
-| `status`     | `text`          | `'scheduled'`, `'completed'`, `'cancelled'`, `'no_show'` |
-| `created_at` | `timestamptz`   |                                                          |
-| `updated_at` | `timestamptz`   | Auto-updated via trigger                                 |
+| Column        | Type            | Notes                                                                              |
+| ------------- | --------------- | ---------------------------------------------------------------------------------- |
+| `id`          | `bigserial` (PK)|                                                                                   |
+| `doctor_id`   | `bigint`        | FK to `doctors` (`on delete restrict`)                                             |
+| `patient_id`  | `uuid`          | FK to `user_profiles` (`on delete restrict`)                                       |
+| `clinic_id`   | `bigint`        | FK to `clinics` (`on delete restrict`)                                             |
+| `start_at`    | `timestamptz`   |                                                                                    |
+| `end_at`      | `timestamptz`   | Must equal `start_at + 30 minutes` (enforced by check)                             |
+| `status`      | `text`          | `'scheduled'`, `'confirmed'`, `'completed'`, `'cancelled'`, `'declined'`, `'no_show'` |
+| `patient_ack` | `boolean`       | Default `false`. Set to `true` when patient dismisses a declined-appointment notification. |
+| `created_at`  | `timestamptz`   |                                                                                    |
+| `updated_at`  | `timestamptz`   | Auto-updated via trigger                                                           |
 
-**Constraints:** Unique on `(doctor_id, start_at)` to prevent double-booking.
+**Constraints:**
+
+- **30-minute duration check:** `end_at = start_at + interval '30 minutes'`.
+- **Partial unique index** (`appointments_active_slot`): unique on `(doctor_id, start_at)` **where** `status in ('scheduled', 'confirmed', 'completed')`. This prevents double-booking for active appointments while allowing cancelled, declined, and no-show slots to be rebooked.
 
 ### `reviews`
 
@@ -163,13 +167,14 @@ Patient reviews for completed appointments.
 
 ## Indexes
 
-| Index                               | Table                | Columns                   | Purpose                              |
-| ----------------------------------- | -------------------- | ------------------------- | ------------------------------------ |
-| `idx_appointments_doctor_start`     | `appointments`       | `doctor_id`, `start_at`   | Fast lookup of a doctor's schedule   |
-| `idx_appointments_patient_start`    | `appointments`       | `patient_id`, `start_at`  | Fast lookup of a patient's bookings  |
-| `idx_availability_doctor_weekday`   | `doctor_availability`| `doctor_id`, `weekday`    | Weekly schedule queries              |
-| `idx_timeoff_doctor_start`          | `doctor_time_off`    | `doctor_id`, `start_at`   | Time-off overlap checks              |
-| `reviews_unique_appointment`        | `reviews`            | `appointment_id` (unique) | One review per appointment           |
+| Index                               | Table                | Columns / Condition                                            | Purpose                                                  |
+| ----------------------------------- | -------------------- | -------------------------------------------------------------- | -------------------------------------------------------- |
+| `appointments_active_slot`          | `appointments`       | `(doctor_id, start_at)` unique, where status in (`scheduled`, `confirmed`, `completed`) | Prevent double-booking; allow rebooking cancelled/declined slots |
+| `idx_appointments_doctor_start`     | `appointments`       | `doctor_id`, `start_at`                                        | Fast lookup of a doctor's schedule                        |
+| `idx_appointments_patient_start`    | `appointments`       | `patient_id`, `start_at`                                       | Fast lookup of a patient's bookings                       |
+| `idx_availability_doctor_weekday`   | `doctor_availability`| `doctor_id`, `weekday`                                         | Weekly schedule queries                                   |
+| `idx_timeoff_doctor_start`          | `doctor_time_off`    | `doctor_id`, `start_at`                                        | Time-off overlap checks                                   |
+| `reviews_unique_appointment`        | `reviews`            | `appointment_id` (unique)                                      | One review per appointment                                |
 
 ---
 
