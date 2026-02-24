@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Activity, MapPin, Clock, ArrowRight, User, Stethoscope, XCircle } from "lucide-react";
 import { DismissDeclineButton } from "@/components/dismiss-decline-button";
+import { CancelAppointmentButton } from "@/components/cancel-appointment-button";
 
 export const dynamic = "force-dynamic";
 
@@ -244,12 +245,15 @@ export default async function PatientDashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <Badge
-                      variant={apt.status === "confirmed" ? "success" : "info"}
-                      className="w-fit capitalize"
-                    >
-                      {apt.status === "scheduled" ? "Awaiting Confirmation" : "Confirmed"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={apt.status === "confirmed" ? "success" : "info"}
+                        className="w-fit capitalize"
+                      >
+                        {apt.status === "scheduled" ? "Awaiting Confirmation" : "Confirmed"}
+                      </Badge>
+                      <CancelAppointmentButton appointmentId={apt.id} />
+                    </div>
                   </div>
                 ))}
               </div>
