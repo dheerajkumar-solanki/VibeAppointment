@@ -136,8 +136,34 @@ export default async function DoctorDashboardPage() {
   const upcomingCount = upcomingAppointments?.length || 0;
   const isPending = doctor?.status === "pending";
 
+  // Check if doctor has any availability
+  const { data: availabilityRaw } = await supabase
+    .from("doctor_availability")
+    .select("id")
+    .eq("doctor_id", doctor?.id)
+    .limit(1);
+    
+  const hasAvailability = availabilityRaw && availabilityRaw.length > 0;
+
   return (
     <div className="flex flex-col gap-8 pb-12">
+      {!hasAvailability && (
+        <div className="flex items-start gap-3 rounded-[1.5rem] border border-blue-200 bg-blue-50 px-6 py-5 shadow-sm">
+          <Calendar className="mt-0.5 h-6 w-6 shrink-0 text-blue-600" />
+          <div className="flex-1">
+            <p className="font-bold text-blue-900">Action Required: Set Your Availability</p>
+            <p className="mt-1 text-sm text-blue-700">
+              Patients cannot book appointments with you until you register your time availability.
+            </p>
+          </div>
+          <Link href="/settings/availability" className="shrink-0">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-full">
+              Set Availability
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {isPending && (
         <div className="flex items-start gap-3 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-6 py-5 shadow-sm">
           <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
