@@ -28,8 +28,8 @@ interface Doctor {
   first_name: string;
   last_name: string;
   user_profiles: { full_name: string } | null;
-  specialities: { name: string } | null;
-  clinics: { id: number; name: string; address: string; city: string; country: string; timezone: string } | null;
+  specialities: { name: string }[] | null;
+  clinics: { id: number; name: string; address: string; city: string; country: string; timezone: string }[] | null;
 }
 
 interface Review {
@@ -97,8 +97,8 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
   const doctorFull = {
     ...doctor,
     full_name: `${doctor.first_name} ${doctor.last_name}`.trim() || "Unknown Doctor",
-    speciality_name: doctor.specialities?.name,
-    clinic: doctor.clinics,
+    speciality_name: doctor.specialities?.[0]?.name,
+    clinic: doctor.clinics?.[0] ?? null,
   };
 
   return (
