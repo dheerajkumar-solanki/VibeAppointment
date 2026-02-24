@@ -155,10 +155,9 @@ CREATE TRIGGER update_reviews_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Optional: one review per patient/doctor per calendar month
--- Note: Enforced via application logic instead of index due to date_trunc immutability issue
--- create unique index reviews_unique_patient_doctor_month
---   on public.reviews (patient_id, doctor_id, date_trunc('month', created_at));
+-- One review per appointment
+create unique index if not exists reviews_unique_appointment
+  on public.reviews (appointment_id);
 
 -- Helpful indexes
 create index if not exists idx_appointments_doctor_start

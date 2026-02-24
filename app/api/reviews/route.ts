@@ -63,31 +63,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const appointmentDate = new Date(appointment.start_at);
-  const now = new Date();
-  const diffMs = now.getTime() - appointmentDate.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-  if (diffDays > 31) {
-    return NextResponse.json(
-      { error: "Reviews are only allowed within one month of the visit" },
-      { status: 403 }
-    );
-  }
-
-  // Check if already reviewed this doctor this month
-  const currentMonth = new Date().toISOString().slice(0, 7); // "2026-02"
+  // One review per appointment
   const { data: existingReview } = await supabase
     .from("reviews")
-    .select("id, created_at")
-    .eq("doctor_id", doctorId)
-    .eq("patient_id", user.id)
-    .like("created_at", `${currentMonth}%`)
+    .select("id")
+    .eq("appointment_id", appointmentId)
     .maybeSingle();
 
   if (existingReview) {
     return NextResponse.json(
-      { error: "You can only review this doctor once per month" },
+      { error: "This appointment has already been reviewed" },
       { status: 403 }
     );
   }

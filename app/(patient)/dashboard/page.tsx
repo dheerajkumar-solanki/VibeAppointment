@@ -51,10 +51,7 @@ export default async function PatientDashboardPage() {
     .order("start_at", { ascending: true })
     .limit(5);
 
-  // Fetch past appointments (completed within last month - eligible for review)
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-  
+  // Fetch all completed appointments
   const { data: pastAppointments } = await supabase
     .from("appointments")
     .select(`
@@ -70,18 +67,21 @@ export default async function PatientDashboardPage() {
     `)
     .eq("patient_id", user.id)
     .eq("status", "completed")
-    .gte("start_at", oneMonthAgo.toISOString())
     .order("start_at", { ascending: false })
-    .limit(5);
+    .limit(10);
 
-  // Check which doctors have been reviewed this month
-  const { data: existingReviews } = await supabase
-    .from("reviews")
-    .select("doctor_id, created_at")
-    .eq("patient_id", user.id);
+  // Check which appointments have already been reviewed
+  const appointmentIds = (pastAppointments || []).map((a: Appointment) => a.id);
+  const { data: existingReviews } = appointmentIds.length > 0
+    ? await supabase
+        .from("reviews")
+        .select("appointment_id")
+        .eq("patient_id", user.id)
+        .in("appointment_id", appointmentIds)
+    : { data: [] };
 
-  const reviewedDoctorIds = new Set(
-    existingReviews?.map(r => r.doctor_id) || []
+  const reviewedAppointmentIds = new Set(
+    existingReviews?.map(r => r.appointment_id) || []
   );
 
   const appointmentsWithReview = (pastAppointments || []).map((apt: Appointment) => {
@@ -90,7 +90,7 @@ export default async function PatientDashboardPage() {
       ...apt,
       doctor_name: doctor ? `${doctor.first_name} ${doctor.last_name}` : "Unknown",
       doctor_id: doctor?.id || apt.doctor_id,
-      can_review: !reviewedDoctorIds.has(apt.doctor_id),
+      can_review: !reviewedAppointmentIds.has(apt.id),
     };
   });
 
@@ -199,7 +199,7 @@ export default async function PatientDashboardPage() {
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <p className="font-medium text-slate-900">No recent visits</p>
                 <p className="mt-1 text-sm text-slate-500 max-w-xs">
-                  Your completed appointments from the last month will appear here.
+                  Your completed appointments will appear here.
                 </p>
               </div>
             ) : (

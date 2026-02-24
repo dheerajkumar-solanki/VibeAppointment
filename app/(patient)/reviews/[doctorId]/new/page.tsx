@@ -40,6 +40,17 @@ export default async function NewReviewPage({ params, searchParams }: NewReviewP
     notFound();
   }
 
+  // Prevent duplicate review for the same appointment
+  const { data: existingReview } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("appointment_id", appointmentIdNum)
+    .maybeSingle();
+
+  if (existingReview) {
+    redirect("/dashboard");
+  }
+
   // Get doctor info
   const { data: doctor } = await supabase
     .from("doctors")
