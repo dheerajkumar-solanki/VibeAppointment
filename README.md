@@ -113,4 +113,4 @@ VibeAppointment/
 
 ## License
 
-This project is provided as-is for educational and personal use only. 
+This project is provided as-is for educational and personal use only.
