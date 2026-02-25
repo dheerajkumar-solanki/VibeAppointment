@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { AlertTriangle, Building2, MapPin, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 interface Doctor {
   id?: number;
@@ -49,6 +50,7 @@ export function DoctorProfileForm({ doctor, specialities, clinics }: DoctorProfi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [firstName, setFirstName] = useState(doctor?.first_name || "");
   const [lastName, setLastName] = useState(doctor?.last_name || "");
@@ -77,6 +79,21 @@ export function DoctorProfileForm({ doctor, specialities, clinics }: DoctorProfi
     setLoading(true);
     setError(null);
     setSuccess(false);
+    setFieldErrors({});
+
+    const errors: Record<string, string> = {};
+    if (!firstName.trim()) errors.firstName = "First name is required";
+    if (!lastName.trim()) errors.lastName = "Last name is required";
+    if (clinicMode === "existing" && !clinicId) errors.clinic = "Please select a clinic";
+    if (clinicMode === "new" && !newClinicName.trim()) errors.clinicName = "Clinic name is required";
+    if (clinicMode === "new" && !newClinicCity.trim()) errors.clinicCity = "City is required";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setLoading(false);
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
     try {
       let finalSpecialityId: number | null = specialityId ? parseInt(specialityId) : null;
@@ -155,9 +172,12 @@ export function DoctorProfileForm({ doctor, specialities, clinics }: DoctorProfi
       }
 
       setSuccess(true);
+      toast.success(isUpdate ? "Profile updated — pending admin approval" : "Profile saved successfully!");
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Failed to save profile");
+      const msg = err.message || "Failed to save profile";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -180,20 +200,26 @@ export function DoctorProfileForm({ doctor, specialities, clinics }: DoctorProfi
 
       {/* Name */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input
-          label="First Name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          placeholder="e.g. Sarah"
-          required
-        />
-        <Input
-          label="Last Name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          placeholder="e.g. Jenkins"
-          required
-        />
+        <div>
+          <Input
+            label="First Name"
+            value={firstName}
+            onChange={(e) => { setFirstName(e.target.value); setFieldErrors((p) => ({ ...p, firstName: "" })); }}
+            placeholder="e.g. Sarah"
+            required
+          />
+          {fieldErrors.firstName && <p className="mt-1 text-xs text-red-600">{fieldErrors.firstName}</p>}
+        </div>
+        <div>
+          <Input
+            label="Last Name"
+            value={lastName}
+            onChange={(e) => { setLastName(e.target.value); setFieldErrors((p) => ({ ...p, lastName: "" })); }}
+            placeholder="e.g. Jenkins"
+            required
+          />
+          {fieldErrors.lastName && <p className="mt-1 text-xs text-red-600">{fieldErrors.lastName}</p>}
+        </div>
       </div>
 
       {/* Degree */}
@@ -288,18 +314,21 @@ export function DoctorProfileForm({ doctor, specialities, clinics }: DoctorProfi
         </div>
 
         {clinicMode === "existing" ? (
-          <Select
-            id="clinic"
-            value={clinicId}
-            onChange={(e) => setClinicId(e.target.value)}
-            options={[
-              { value: "", label: "Select a clinic" },
-              ...clinics.map((c) => ({
-                value: c.id.toString(),
-                label: `${c.name} — ${c.city}${c.country ? `, ${c.country}` : ""}`,
-              })),
-            ]}
-          />
+          <div>
+            <Select
+              id="clinic"
+              value={clinicId}
+              onChange={(e) => { setClinicId(e.target.value); setFieldErrors((p) => ({ ...p, clinic: "" })); }}
+              options={[
+                { value: "", label: "Select a clinic" },
+                ...clinics.map((c) => ({
+                  value: c.id.toString(),
+                  label: `${c.name} — ${c.city}${c.country ? `, ${c.country}` : ""}`,
+                })),
+              ]}
+            />
+            {fieldErrors.clinic && <p className="mt-1 text-xs text-red-600">{fieldErrors.clinic}</p>}
+          </div>
         ) : (
           <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/50 p-5">
             <Input

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 interface TimeSlot {
   start: string;
@@ -83,13 +84,19 @@ export function SlotPicker({ doctorId, clinicId, onSlotSelected }: SlotPickerPro
       const data = await response.json();
 
       if (data.error) {
-        setError(data.error);
+        const msg = data.error === "Validation failed" && data.details
+          ? data.details.map((d: { message: string }) => d.message).join(", ")
+          : data.error;
+        setError(msg);
+        toast.error(msg);
       } else {
         setBookingSuccess(true);
+        toast.success("Appointment booked successfully!");
         onSlotSelected?.(selectedSlot);
       }
     } catch (err) {
       setError("Failed to book appointment");
+      toast.error("Network error — please check your connection and try again.");
     } finally {
       setBooking(false);
     }

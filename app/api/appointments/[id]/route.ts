@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { updateAppointmentSchema, formatZodErrors } from "@/lib/validations";
 
 export async function PATCH(
   request: NextRequest,
@@ -37,8 +38,12 @@ export async function PATCH(
   }
 
   const body = await request.json().catch(() => null);
-  const status = body?.status as string | undefined;
-  const patientAck = body?.patientAck as boolean | undefined;
+  const parsed = updateAppointmentSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(formatZodErrors(parsed.error), { status: 400 });
+  }
+
+  const { status, patientAck } = parsed.data;
 
   const { data: appointment } = await supabase
     .from("appointments")
@@ -87,8 +92,8 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
-  if (!status || !["scheduled", "confirmed", "completed", "cancelled", "declined", "no_show"].includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  if (!status) {
+    return NextResponse.json({ error: "Status is required" }, { status: 400 });
   }
 
   const currentStatus = appointment.status;

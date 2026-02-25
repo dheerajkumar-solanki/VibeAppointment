@@ -145,6 +145,8 @@ Individual 30-minute appointment slots.
 
 - **30-minute duration check:** `end_at = start_at + interval '30 minutes'`.
 - **Partial unique index** (`appointments_active_slot`): unique on `(doctor_id, start_at)` **where** `status in ('scheduled', 'confirmed', 'completed')`. This prevents double-booking for active appointments while allowing cancelled, declined, and no-show slots to be rebooked.
+- **GiST exclusion constraint** (`appointments_no_overlap`): Uses `EXCLUDE USING gist` with `tstzrange` to prevent overlapping time ranges for the same doctor at the database level, providing an airtight double-booking guard even under concurrent requests. Requires the `btree_gist` extension.
+- **Approved-doctor trigger** (`trg_check_doctor_approved`): A `BEFORE INSERT` trigger that ensures appointments can only be created for doctors with `status = 'approved'`, preventing bookings to unapproved or rejected doctor profiles.
 
 ### `reviews`
 
@@ -232,6 +234,22 @@ RLS is enabled on **all** tables. Below is a summary of the key policies:
 | `reviews_select_all`  | SELECT    | Public — anyone can read reviews.        |
 | `reviews_insert_self` | INSERT    | Patients can only submit their own reviews. |
 | `reviews_update_self` | UPDATE    | Patients can only update their own reviews. |
+
+---
+
+## Security Guardrails Summary
+
+The database schema implements defense-in-depth through multiple layers:
+
+1. **Row Level Security (RLS)** on all tables — users can only read/write rows they are authorized for.
+2. **Partial unique index** on `(doctor_id, start_at)` — prevents identical slot bookings.
+3. **GiST exclusion constraint** — prevents overlapping time ranges via `tstzrange`, guarding against race conditions.
+4. **Approved-doctor trigger** — ensures only admin-approved doctors can receive appointments.
+5. **30-minute duration check** — enforces consistent slot sizes at the database level.
+6. **One-review-per-appointment unique index** — prevents duplicate reviews.
+7. **Rating range checks** — enforces 1-5 ratings via CHECK constraints.
+8. **API-level rate limiting** — OTP endpoint (5 req/min) and OAuth login (10 req/min) are rate-limited per IP.
+9. **Zod validation** — All API route handlers validate request bodies with Zod schemas and return structured field-level errors.
 
 ---
 

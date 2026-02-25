@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RatingStars } from "@/components/ui/rating";
 import { Textarea } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface ReviewFormProps {
   doctorId: number;
@@ -25,7 +26,9 @@ export function ReviewForm({ doctorId, appointmentId }: ReviewFormProps) {
     e.preventDefault();
     
     if (!ratingOverall || !ratingEffectiveness || !ratingBehavior) {
-      setError("Please provide all ratings");
+      const msg = "Please provide all three ratings before submitting";
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -49,12 +52,18 @@ export function ReviewForm({ doctorId, appointmentId }: ReviewFormProps) {
       const data = await response.json();
 
       if (data.error) {
-        setError(data.error);
+        const msg = data.error === "Validation failed" && data.details
+          ? data.details.map((d: { message: string }) => d.message).join(", ")
+          : data.error;
+        setError(msg);
+        toast.error(msg);
       } else {
+        toast.success("Review submitted — thank you!");
         router.push("/dashboard");
       }
     } catch (err) {
       setError("Failed to submit review");
+      toast.error("Network error — please try again.");
     } finally {
       setLoading(false);
     }

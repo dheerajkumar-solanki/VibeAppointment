@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { toZonedTime } from "date-fns-tz";
+import { createAppointmentSchema, formatZodErrors } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -28,21 +30,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => null);
-  const doctorId = Number.parseInt(body?.doctorId, 10);
-  const clinicId = Number.parseInt(body?.clinicId, 10);
-  const startAtISO = body?.startAt as string | undefined;
-
-  if (!doctorId || !clinicId || !startAtISO) {
-    return NextResponse.json(
-      { error: "doctorId, clinicId and startAt are required" },
-      { status: 400 }
-    );
+  const parsed = createAppointmentSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(formatZodErrors(parsed.error), { status: 400 });
   }
 
+  const { doctorId, clinicId, startAt: startAtISO } = parsed.data;
   const startAt = new Date(startAtISO);
-  if (Number.isNaN(startAt.getTime())) {
-    return NextResponse.json({ error: "Invalid startAt" }, { status: 400 });
-  }
 
   const endAt = new Date(startAt.getTime() + 30 * 60 * 1000);
 
@@ -62,8 +56,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check if doctor works on this day of week
-  const weekday = startAt.getUTCDay();
+  // Resolve clinic timezone for accurate weekday computation
+  const { data: clinic } = await supabase
+    .from("clinics")
+    .select("timezone")
+    .eq("id", clinicId)
+    .maybeSingle();
+
+  const clinicTz = clinic?.timezone || "UTC";
+  const localDate = toZonedTime(startAt, clinicTz);
+  const weekday = localDate.getDay();
+
   const { data: availability } = await supabase
     .from("doctor_availability")
     .select("id")
@@ -89,8 +92,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
+      const isOverlap =
+        error.code === "23P01" || error.message?.includes("appointments_no_overlap");
       return NextResponse.json(
-        { error: "Unable to create appointment" },
+        { error: isOverlap ? "This time slot has already been booked" : "Unable to create appointment" },
         { status: 409 }
       );
     }

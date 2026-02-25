@@ -1,6 +1,9 @@
 -- Supabase schema for VibeAppointment
 -- NOTE: Apply this in the Supabase SQL editor or migrations.
 
+-- Required for GiST exclusion constraint on appointments
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- Helper function for updated_at trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -135,6 +138,15 @@ create unique index if not exists appointments_active_slot
   on public.appointments (doctor_id, start_at)
   where status in ('scheduled', 'confirmed', 'completed');
 
+-- GiST exclusion constraint: prevent overlapping time ranges for the same doctor
+-- This is a DB-level safety net beyond the unique index above.
+ALTER TABLE public.appointments
+  ADD CONSTRAINT appointments_no_overlap
+  EXCLUDE USING gist (
+    doctor_id WITH =,
+    tstzrange(start_at, end_at, '[)') WITH &&
+  );
+
 -- Add trigger for appointments
 CREATE TRIGGER update_appointments_updated_at
   BEFORE UPDATE ON public.appointments
@@ -164,6 +176,24 @@ CREATE TRIGGER update_reviews_updated_at
 -- One review per appointment
 create unique index if not exists reviews_unique_appointment
   on public.reviews (appointment_id);
+
+-- Ensure only approved doctors can receive appointments
+CREATE OR REPLACE FUNCTION check_doctor_approved()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.doctors WHERE id = NEW.doctor_id AND status = 'approved'
+  ) THEN
+    RAISE EXCEPTION 'Doctor is not approved for appointments';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_check_doctor_approved
+  BEFORE INSERT ON public.appointments
+  FOR EACH ROW
+  EXECUTE FUNCTION check_doctor_approved();
 
 -- Recalculate doctor avg ratings whenever reviews change
 CREATE OR REPLACE FUNCTION update_doctor_ratings()

@@ -31,7 +31,7 @@ export default async function HomePage() {
               </h1>
               
               <p className="text-lg leading-relaxed text-slate-300 sm:text-xl">
-                Skip the waiting room. Connect with top-rated, verified doctors and book your next appointment instantly. Real care, right when you need it.
+                Skip the waiting room. Connect with top-rated, verified doctors and book a 30-minute appointment instantly. Real care, right when you need it.
               </p>
               
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center pt-4">
@@ -60,6 +60,10 @@ export default async function HomePage() {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-brand-400" />
                   <span>Instant Booking</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-brand-400" />
+                  <span>30-min Appointments</span>
                 </div>
               </div>
             </div>

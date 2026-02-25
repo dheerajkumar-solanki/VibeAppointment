@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   return handleOAuthLogin(request);
@@ -11,6 +12,8 @@ export async function GET(request: NextRequest) {
 }
 
 async function handleOAuthLogin(request: NextRequest) {
+  const rateLimited = rateLimit(request, "login", { maxRequests: 10, windowMs: 60_000 });
+  if (rateLimited) return rateLimited;
   const requestUrl = new URL(request.url);
   const cookieStore = await cookies();
   const supabase = createServerClient(

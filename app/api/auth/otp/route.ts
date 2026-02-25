@@ -1,10 +1,20 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { otpSchema, formatZodErrors } from "@/lib/validations";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, otp } = await request.json();
+    const rateLimited = rateLimit(request, "otp", { maxRequests: 5, windowMs: 60_000 });
+    if (rateLimited) return rateLimited;
+
+    const body = await request.json();
+    const parsed = otpSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(formatZodErrors(parsed.error), { status: 400 });
+    }
+    const { email, otp } = parsed.data;
     const cookieStore = await cookies();
     
     const supabase = createServerClient(

@@ -1,10 +1,16 @@
 import { createSupabaseServerClient } from "./supabase/server";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 export interface TimeSlot {
-  start: string; // ISO string
-  end: string; // ISO string
+  start: string; // ISO string (UTC)
+  end: string; // ISO string (UTC)
 }
 
+/**
+ * Returns available 30-minute slots for a given doctor on a given date.
+ * All availability windows and day-of-week checks are computed in the
+ * clinic's local timezone, while slots are stored and returned in UTC.
+ */
 export async function getAvailableSlotsForDoctorOnDate(
   doctorId: number,
   dateISO: string
@@ -16,7 +22,19 @@ export async function getAvailableSlotsForDoctorOnDate(
     return [];
   }
 
-  const weekday = date.getUTCDay(); // 0-6, simplified for now
+  // Fetch doctor's clinic timezone
+  const { data: doctor } = await supabase
+    .from("doctors")
+    .select("clinic_id, clinics(timezone)")
+    .eq("id", doctorId)
+    .maybeSingle();
+
+  const clinicTz: string =
+    (doctor?.clinics as { timezone?: string } | null)?.timezone || "UTC";
+
+  // Convert the requested date to the clinic's local timezone
+  const localDate = toZonedTime(date, clinicTz);
+  const weekday = localDate.getDay(); // 0-6, computed in clinic local time
 
   const { data: availability } = await supabase
     .from("doctor_availability")
@@ -28,43 +46,48 @@ export async function getAvailableSlotsForDoctorOnDate(
     return [];
   }
 
-  const startOfDay = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0)
+  // Build start/end of day in clinic local time, then convert to UTC
+  const localYear = localDate.getFullYear();
+  const localMonth = localDate.getMonth();
+  const localDay = localDate.getDate();
+
+  const startOfDayUTC = fromZonedTime(
+    new Date(localYear, localMonth, localDay, 0, 0, 0),
+    clinicTz
   );
-  const endOfDay = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59)
+  const endOfDayUTC = fromZonedTime(
+    new Date(localYear, localMonth, localDay, 23, 59, 59),
+    clinicTz
   );
 
   const { data: timeOff } = await supabase
     .from("doctor_time_off")
     .select("start_at, end_at")
     .eq("doctor_id", doctorId)
-    .lt("start_at", endOfDay.toISOString())
-    .gt("end_at", startOfDay.toISOString());
+    .lt("start_at", endOfDayUTC.toISOString())
+    .gt("end_at", startOfDayUTC.toISOString());
 
   const { data: existingAppointments } = await supabase
     .from("appointments")
     .select("start_at, end_at, status")
     .eq("doctor_id", doctorId)
     .in("status", ["scheduled", "confirmed", "completed"])
-    .gte("start_at", startOfDay.toISOString())
-    .lte("end_at", endOfDay.toISOString());
+    .gte("start_at", startOfDayUTC.toISOString())
+    .lte("end_at", endOfDayUTC.toISOString());
 
-  const blockedRanges =
-    (timeOff ?? []).map((b) => ({
-      start: new Date(b.start_at),
-      end: new Date(b.end_at),
-    })) ?? [];
+  const blockedRanges = (timeOff ?? []).map((b) => ({
+    start: new Date(b.start_at),
+    end: new Date(b.end_at),
+  }));
 
-  const busyRanges =
-    (existingAppointments ?? []).map((a) => ({
-      start: new Date(a.start_at),
-      end: new Date(a.end_at),
-    })) ?? [];
+  const busyRanges = (existingAppointments ?? []).map((a) => ({
+    start: new Date(a.start_at),
+    end: new Date(a.end_at),
+  }));
 
   const slots: TimeSlot[] = [];
 
-  for (const window of availability ?? []) {
+  for (const window of availability) {
     const [startHour, startMinute] = String(window.start_time)
       .split(":")
       .map((v) => parseInt(v, 10));
@@ -72,26 +95,15 @@ export async function getAvailableSlotsForDoctorOnDate(
       .split(":")
       .map((v) => parseInt(v, 10));
 
-    let cursor = new Date(
-      Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate(),
-        startHour,
-        startMinute,
-        0
-      )
+    // Availability times are in clinic local time — convert to UTC
+    let cursor = fromZonedTime(
+      new Date(localYear, localMonth, localDay, startHour, startMinute, 0),
+      clinicTz
     );
 
-    const windowEnd = new Date(
-      Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate(),
-        endHour,
-        endMinute,
-        0
-      )
+    const windowEnd = fromZonedTime(
+      new Date(localYear, localMonth, localDay, endHour, endMinute, 0),
+      clinicTz
     );
 
     while (cursor < windowEnd) {
@@ -121,4 +133,3 @@ export async function getAvailableSlotsForDoctorOnDate(
 
   return slots;
 }
-

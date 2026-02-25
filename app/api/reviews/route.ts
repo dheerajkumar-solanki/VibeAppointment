@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createReviewSchema, formatZodErrors } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -28,28 +29,12 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => null);
-  const doctorId = Number.parseInt(body?.doctorId, 10);
-  const appointmentId = Number.parseInt(body?.appointmentId, 10);
-  const ratingEffectiveness = Number.parseInt(body?.ratingEffectiveness, 10);
-  const ratingOverall = Number.parseInt(body?.ratingOverall, 10);
-  const ratingBehavior = Number.parseInt(body?.ratingBehavior, 10);
-  const comment = (body?.comment as string | undefined) ?? null;
-
-  const isValidRating = (r: number) => Number.isFinite(r) && r >= 1 && r <= 5;
-
-  if (!doctorId || !appointmentId) {
-    return NextResponse.json(
-      { error: "Missing doctor or appointment ID" },
-      { status: 400 }
-    );
+  const parsed = createReviewSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(formatZodErrors(parsed.error), { status: 400 });
   }
 
-  if (!isValidRating(ratingEffectiveness) || !isValidRating(ratingOverall) || !isValidRating(ratingBehavior)) {
-    return NextResponse.json(
-      { error: "Ratings must be integers between 1 and 5" },
-      { status: 400 }
-    );
-  }
+  const { doctorId, appointmentId, ratingEffectiveness, ratingOverall, ratingBehavior, comment } = parsed.data;
 
   const { data: appointment } = await supabase
     .from("appointments")
