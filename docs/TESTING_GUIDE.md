@@ -6,6 +6,35 @@ This guide walks through the complete VibeAppointment user flow: patient booking
 
 ---
 
+## Demo Accounts
+
+After running [`supabase/demo_seed.sql`](../supabase/demo_seed.sql), the following test accounts are available. All use **Email OTP** sign-in (no password required — just enter the email and submit the 6-digit code sent to the inbox, or retrieve it from Supabase Dashboard → Authentication → Users → "Send magic link").
+
+| Email | Role | Notes |
+|-------|------|-------|
+| `admin@vibeappointment.demo` | Patient + Admin | Can approve doctors and book appointments |
+| `doctor1@vibeappointment.demo` | Doctor | Dr. Sarah Jenkins — General Medicine, approved |
+| `doctor2@vibeappointment.demo` | Doctor | Dr. Michael Chen — Cardiology, approved |
+
+### Pre-seeded state after running the seed script
+
+| What | Details |
+|------|---------|
+| 2 approved doctors | Dr. Sarah Jenkins & Dr. Michael Chen, Mon–Fri 9 AM–5 PM (America/New_York) |
+| 2 completed appointments | Patient (`admin@`) had past appointments with both doctors (last week) |
+| 2 reviews | Patient has already reviewed both doctors with 5-star ratings |
+| 1 confirmed appointment | Patient has a confirmed upcoming appointment with Dr. Jenkins (next Monday, 9 AM) |
+| 1 scheduled appointment | Patient has a scheduled upcoming appointment with Dr. Chen (next Tuesday, 9 AM) |
+
+> **To test the review flow immediately:** The two completed appointments already have reviews seeded. To test submitting a *new* review, book an additional appointment, have the doctor mark it completed (or use the SQL shortcut below), then sign in as the patient and leave a review.
+>
+> **Admin shortcut to mark an appointment completed** (for testing without waiting):
+> ```sql
+> UPDATE public.appointments SET status = 'completed' WHERE id = <appointment-id>;
+> ```
+
+---
+
 ## Getting Started
 
 ### Authentication
@@ -167,11 +196,16 @@ curl -X POST "https://vibe-appointment.vercel.app/api/reviews" \
 
 ## Seeded Data
 
-If the live deployment has no data, apply the seed script from [`supabase/demo_seed.sql`](../supabase/demo_seed.sql) in the Supabase SQL editor. It creates:
+Apply the seed script from [`supabase/demo_seed.sql`](../supabase/demo_seed.sql) in the Supabase SQL editor. Follow the instructions at the top of that file to replace the three placeholder UUIDs with your actual Supabase auth user IDs before running.
 
-- 3 medical specialities (General Medicine, Cardiology, Dermatology)
+The script inserts:
+
+- 5 medical specialities (General Medicine, Cardiology, Dermatology, Pediatrics, Orthopedics)
 - 1 clinic in New York (`America/New_York` timezone)
-- Instructions to create an approved doctor with Mon-Fri 9 AM - 5 PM availability
+- 3 user profiles (1 patient+admin, 2 doctors)
+- 2 approved doctor profiles with Mon–Fri 9 AM–5 PM availability
+- 4 appointments (2 completed last week, 1 confirmed next Monday, 1 scheduled next Tuesday)
+- 2 reviews for the completed appointments (ratings auto-computed on doctor profiles via trigger)
 
 ---
 

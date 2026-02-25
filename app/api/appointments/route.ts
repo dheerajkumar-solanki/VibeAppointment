@@ -56,6 +56,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Verify the doctor belongs to the submitted clinic to prevent clinic mismatch
+  const { data: doctorRecord } = await supabase
+    .from("doctors")
+    .select("clinic_id")
+    .eq("id", doctorId)
+    .maybeSingle();
+
+  if (!doctorRecord || doctorRecord.clinic_id !== clinicId) {
+    return NextResponse.json(
+      { error: "Doctor does not belong to the specified clinic" },
+      { status: 400 }
+    );
+  }
+
   // Resolve clinic timezone for accurate weekday computation
   const { data: clinic } = await supabase
     .from("clinics")
@@ -67,16 +81,38 @@ export async function POST(request: NextRequest) {
   const localDate = toZonedTime(startAt, clinicTz);
   const weekday = localDate.getDay();
 
+  // Fetch availability windows for this weekday (need start_time/end_time for time-window check)
   const { data: availability } = await supabase
     .from("doctor_availability")
-    .select("id")
+    .select("id, start_time, end_time")
     .eq("doctor_id", doctorId)
-    .eq("weekday", weekday)
-    .limit(1);
+    .eq("weekday", weekday);
 
   if (!availability || availability.length === 0) {
     return NextResponse.json(
       { error: "Doctor is not available on this day" },
+      { status: 400 }
+    );
+  }
+
+  // Verify the selected time falls within at least one configured availability window.
+  // start_time/end_time are stored as "HH:MM:SS" in clinic local time.
+  const localHour = localDate.getHours();
+  const localMinute = localDate.getMinutes();
+  const localMinutes = localHour * 60 + localMinute;
+
+  const withinWindow = availability.some((w) => {
+    const [wStartH, wStartM] = String(w.start_time).split(":").map(Number);
+    const [wEndH, wEndM] = String(w.end_time).split(":").map(Number);
+    const windowStart = wStartH * 60 + wStartM;
+    // Slot must start at or after window start, and end (30 min later) at or before window end
+    const windowEnd = wEndH * 60 + wEndM;
+    return localMinutes >= windowStart && localMinutes + 30 <= windowEnd;
+  });
+
+  if (!withinWindow) {
+    return NextResponse.json(
+      { error: "Selected time is outside doctor's available hours" },
       { status: 400 }
     );
   }
